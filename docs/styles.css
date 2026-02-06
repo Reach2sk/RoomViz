@@ -571,11 +571,12 @@ canvas {
 
 @media (max-width: 640px), (pointer: coarse) {
   .page {
-    padding: 20px 16px calc(150px + env(safe-area-inset-bottom));
+    padding: 8px 8px calc(100px + env(safe-area-inset-bottom));
   }
 
   .main {
-    padding-bottom: 150px;
+    padding-bottom: 100px;
+    gap: 0;
   }
 
   .control input[type="range"]::-webkit-slider-thumb {
@@ -591,36 +592,62 @@ canvas {
   .hero {
     flex-direction: column;
     align-items: flex-start;
-    margin-bottom: 18px;
-  }
-
-  .stage-overlay {
-    top: auto;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    flex-direction: row;
-    justify-content: center;
-    align-items: center;
-    gap: 10px;
-    border-radius: 0 0 calc(var(--radius) - 9px) calc(var(--radius) - 9px);
-    border: none;
-    border-top: 1px solid var(--border);
-    padding: 8px 12px;
-    background: rgba(255, 255, 255, 0.97);
-  }
-
-  .stage-overlay .ghost-small {
-    padding: 5px 10px;
-    font-size: 11px;
+    margin-bottom: 10px;
   }
 
   .stage {
-    min-height: 46vh;
+    padding: 4px;
+    min-height: auto;
+    border-radius: 12px;
+  }
+
+  .has-photo .stage {
+    padding: 0;
+    border-radius: 10px;
+  }
+
+  .has-photo .canvas-wrap {
+    border: none;
+    border-radius: 10px;
   }
 
   .canvas-wrap {
-    min-height: 36vh;
+    min-height: auto;
+    border-radius: 8px;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  canvas {
+    max-height: none;
+    border-radius: 6px 6px 0 0;
+    flex-shrink: 0;
+  }
+
+  .stage-overlay {
+    position: relative;
+    top: auto;
+    bottom: auto;
+    left: auto;
+    right: auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    border-radius: 0 0 8px 8px;
+    border: none;
+    border-top: 1px solid var(--border);
+    padding: 8px 10px;
+    background: rgba(255, 255, 255, 0.96);
+    margin: 0;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .stage-overlay .ghost-small {
+    padding: 5px 8px;
+    font-size: 11px;
   }
 
   .controls {
@@ -673,13 +700,13 @@ canvas {
     position: static;
     transform: none;
     font-size: 12px;
-    padding: 10px 14px;
-    margin: 10px auto 0;
+    padding: 6px 14px;
+    margin: 4px auto 0;
     white-space: normal;
     text-align: center;
     max-width: none;
     width: fit-content;
-    border-radius: 12px;
+    border-radius: 10px;
     box-shadow: none;
     border: 1px solid var(--border);
     animation: none;
@@ -694,15 +721,7 @@ canvas {
   }
 
   .has-photo .page {
-    padding-top: 12px;
-  }
-
-  .has-photo .stage {
-    min-height: 56vh;
-  }
-
-  .has-photo .canvas-wrap {
-    min-height: 46vh;
+    padding-top: 4px;
   }
 
 }

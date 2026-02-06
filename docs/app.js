@@ -2,7 +2,6 @@ const fileInput = document.getElementById("fileInput");
 const uploadBtn = document.getElementById("uploadBtn");
 const sampleBtn = document.getElementById("sampleBtn");
 const replaceBtn = document.getElementById("replaceBtn");
-const resetBtn = document.getElementById("resetBtn");
 const brightnessSlider = document.getElementById("brightness");
 const viewAdjustedBtn = document.getElementById("viewAdjusted");
 const viewOriginalBtn = document.getElementById("viewOriginal");
@@ -25,7 +24,6 @@ let sheetExpanded = false;
 
 const brightnessControl = document.getElementById("brightnessControl");
 const toneControl = document.getElementById("toneControl");
-const actionRow = document.getElementById("actionRow");
 const toneButtons = Array.from(document.querySelectorAll(".tone-btn"));
 
 const ctx = canvas.getContext("2d", { willReadFrequently: true });
@@ -56,7 +54,6 @@ function clamp(value, min = 0, max = 1) {
 
 function setControlsEnabled(enabled) {
   brightnessSlider.disabled = !enabled;
-  resetBtn.disabled = !enabled;
   replaceBtn.disabled = !enabled;
   viewAdjustedBtn.disabled = !enabled;
   viewOriginalBtn.disabled = !enabled;
@@ -64,7 +61,6 @@ function setControlsEnabled(enabled) {
 
   brightnessControl.dataset.disabled = enabled ? "false" : "true";
   toneControl.dataset.disabled = enabled && toneUnlocked ? "false" : "true";
-  actionRow.dataset.disabled = enabled ? "false" : "true";
   toneButtons.forEach((button) => {
     button.disabled = !enabled || !toneUnlocked;
   });
@@ -402,8 +398,6 @@ function handleSliderInput() {
 }
 
 brightnessSlider.addEventListener("input", handleSliderInput);
-
-resetBtn.addEventListener("click", resetControls);
 
 viewAdjustedBtn.addEventListener("click", () => {
   showOriginal = false;

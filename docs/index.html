@@ -4,17 +4,13 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Room Lighting Visualizer</title>
-    <link rel="stylesheet" href="styles.css?v=20260206-2" />
+    <link rel="stylesheet" href="styles.css?v=20260206-3" />
   </head>
   <body>
     <div class="page">
       <header class="hero">
         <div class="hero-text">
-          <p class="eyebrow">Lighting Preview</p>
           <h1>Light the room. See the mood.</h1>
-          <p class="subhead">
-            Upload a room photo. Slide brightness and warmth to preview the feel.
-          </p>
         </div>
       </header>
 
@@ -31,6 +27,7 @@
                   Original
                 </button>
               </div>
+              <button id="replaceBtn" class="ghost ghost-small" disabled>Change photo</button>
             </div>
           </div>
           <div id="ahaToast" class="aha-toast" role="status" aria-live="polite">
@@ -47,7 +44,7 @@
           <div class="empty-state" id="emptyState">
             <div>
               <h2>Your room appears here</h2>
-              <p>Upload a photo to explore brightness and light tone.</p>
+              <p>Upload a photo to explore brightness and warmth.</p>
               <div class="empty-actions">
                 <button id="uploadBtn" class="primary">Choose photo</button>
                 <button id="sampleBtn" class="ghost">Try sample room</button>
@@ -74,7 +71,7 @@
 
               <div class="control" data-disabled="true" id="brightnessControl">
                 <label for="brightness">
-                  How bright does it feel?
+                  Brightness
                   <span class="control-value" id="brightnessValue">Bright</span>
                 </label>
                 <p class="control-hint" id="brightnessHint">Try dimming.</p>
@@ -95,7 +92,7 @@
 
               <div class="control" data-disabled="true" id="toneControl">
                 <label>
-                  How warm or cool?
+                  Warmth
                   <span class="control-value" id="toneValue">Neutral</span>
                 </label>
                 <p class="control-hint is-hidden" id="toneHint">Now try warmth.</p>
@@ -112,11 +109,6 @@
                 </div>
               </div>
 
-              <div class="control-row" data-disabled="true" id="actionRow">
-                <button id="resetBtn" class="ghost" disabled>Reset</button>
-                <button id="replaceBtn" class="ghost" disabled>Replace photo</button>
-              </div>
-
               <p class="disclaimer">
                 Visual guide only. Real rooms vary by fixture, finish, and daylight.
               </p>
@@ -130,6 +122,6 @@
       </footer>
     </div>
 
-    <script src="app.js?v=20260206-2"></script>
+    <script src="app.js?v=20260206-3"></script>
   </body>
 </html>

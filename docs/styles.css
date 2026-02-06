@@ -439,7 +439,7 @@ canvas {
   }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 640px), (pointer: coarse) {
   .page {
     padding: 20px 16px calc(220px + env(safe-area-inset-bottom));
   }

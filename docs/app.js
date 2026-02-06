@@ -194,6 +194,7 @@ function applyImageSource(imageSource) {
   outputImageData = ctx.createImageData(targetWidth, targetHeight);
 
   emptyState.style.display = "none";
+  document.body.classList.add("has-photo");
   setControlsEnabled(true);
   resetControls();
   setLoading(false);

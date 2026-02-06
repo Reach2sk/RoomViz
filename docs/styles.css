@@ -441,11 +441,11 @@ canvas {
 
 @media (max-width: 640px), (pointer: coarse) {
   .page {
-    padding: 20px 16px calc(220px + env(safe-area-inset-bottom));
+    padding: 20px 16px calc(200px + env(safe-area-inset-bottom));
   }
 
   .main {
-    padding-bottom: 220px;
+    padding-bottom: 200px;
   }
 
   .control input[type="range"]::-webkit-slider-thumb {
@@ -491,9 +491,12 @@ canvas {
 
   .controls .card {
     border-radius: 20px 20px 0 0;
-    padding: 16px 16px 18px;
+    padding: 14px 14px 16px;
     box-shadow: 0 -16px 40px rgba(0, 0, 0, 0.16);
     animation: rise 0.5s ease both;
+    max-height: 42vh;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .sheet-handle {
@@ -502,6 +505,22 @@ canvas {
 
   .scroll-hint.is-visible {
     display: none;
+  }
+
+  .has-photo .hero {
+    display: none;
+  }
+
+  .has-photo .page {
+    padding-top: 12px;
+  }
+
+  .has-photo .stage {
+    min-height: 56vh;
+  }
+
+  .has-photo .canvas-wrap {
+    min-height: 46vh;
   }
 
 }

@@ -441,11 +441,11 @@ canvas {
 
 @media (max-width: 640px), (pointer: coarse) {
   .page {
-    padding: 20px 16px calc(200px + env(safe-area-inset-bottom));
+    padding: 20px 16px calc(150px + env(safe-area-inset-bottom));
   }
 
   .main {
-    padding-bottom: 200px;
+    padding-bottom: 150px;
   }
 
   .control input[type="range"]::-webkit-slider-thumb {
@@ -494,7 +494,7 @@ canvas {
     padding: 14px 14px 16px;
     box-shadow: 0 -16px 40px rgba(0, 0, 0, 0.16);
     animation: rise 0.5s ease both;
-    max-height: 42vh;
+    max-height: 30vh;
     overflow: auto;
     -webkit-overflow-scrolling: touch;
   }

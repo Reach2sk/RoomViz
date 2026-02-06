@@ -1,4 +1,4 @@
-const APP_VERSION = "1.2";
+const APP_VERSION = "1.3";
 
 const fileInput = document.getElementById("fileInput");
 const uploadBtn = document.getElementById("uploadBtn");
@@ -374,13 +374,18 @@ function loadImageFromUrl(url) {
   });
 }
 
-const SAMPLE_IMAGE_URL = "sample.jpg";
+const SAMPLE_LANDSCAPE = "sample.jpg";
+const SAMPLE_PORTRAIT = "sample-portrait.jpg";
+
+function getSampleUrl() {
+  return MOBILE_MEDIA.matches ? SAMPLE_PORTRAIT : SAMPLE_LANDSCAPE;
+}
 
 async function loadSampleImage() {
   setLoading(true);
   isSamplePhoto = true;
   try {
-    const imageSource = await loadImageFromUrl(SAMPLE_IMAGE_URL);
+    const imageSource = await loadImageFromUrl(getSampleUrl());
     applyImageSource(imageSource);
   } catch (error) {
     setLoading(false);

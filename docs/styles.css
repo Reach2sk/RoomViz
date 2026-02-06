@@ -717,11 +717,21 @@ canvas {
   }
 
   .has-photo .hero {
+    margin-bottom: 6px;
+  }
+
+  .has-photo .hero h1 {
+    font-size: 22px;
+    margin-bottom: 4px;
+  }
+
+  .has-photo .hero .subhead,
+  .has-photo .hero .eyebrow {
     display: none;
   }
 
   .has-photo .page {
-    padding-top: 4px;
+    padding-top: 6px;
   }
 
 }

@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Room Lighting Visualizer</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="page">
+      <header class="hero">
+        <div class="hero-text">
+          <p class="eyebrow">Lighting Preview</p>
+          <h1>Light the room. See the mood.</h1>
+          <p class="subhead">
+            Upload a room photo. Slide brightness and warmth to preview the feel.
+          </p>
+        </div>
+      </header>
+
+      <main class="main">
+        <section class="stage" id="stage">
+          <div class="canvas-wrap" id="canvasWrap">
+            <canvas id="roomCanvas" width="960" height="640"></canvas>
+            <div class="stage-overlay">
+              <div class="segmented" role="tablist" aria-label="View mode">
+                <button id="viewAdjusted" class="segmented-btn is-active" aria-selected="true" disabled>
+                  Adjusted
+                </button>
+                <button id="viewOriginal" class="segmented-btn" aria-selected="false" disabled>
+                  Original
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="loading-overlay" id="loadingOverlay" aria-live="polite">
+            <div class="spinner" aria-hidden="true"></div>
+            <span>Processing photo…</span>
+          </div>
+
+          <div class="empty-state" id="emptyState">
+            <div>
+              <h2>Your room appears here</h2>
+              <p>Upload a photo to explore brightness and light tone.</p>
+              <div class="empty-actions">
+                <button id="uploadBtn" class="primary">Choose photo</button>
+                <button id="sampleBtn" class="ghost">Try sample room</button>
+                <span class="hint">or drag and drop a file</span>
+              </div>
+            </div>
+          </div>
+          <input type="file" id="fileInput" accept="image/*" capture="environment" hidden />
+        </section>
+
+        <aside class="controls" aria-label="Lighting controls">
+          <div class="card">
+            <div class="card-header">
+              <h2>Lighting controls</h2>
+              <p>Start with brightness. Then adjust warmth.</p>
+            </div>
+
+            <div class="control" data-disabled="true" id="brightnessControl">
+              <label for="brightness">
+                How bright does it feel?
+                <span class="control-value" id="brightnessValue">Medium</span>
+              </label>
+              <input
+                type="range"
+                id="brightness"
+                min="0"
+                max="100"
+                value="70"
+                step="1"
+                disabled
+              />
+              <div class="ticks">
+                <span>Very Dim</span>
+                <span>Dim</span>
+                <span>Medium</span>
+                <span>Bright</span>
+              </div>
+            </div>
+
+            <div class="control" data-disabled="true" id="toneControl">
+              <label for="tone">
+                How warm or cool?
+                <span class="control-value" id="toneValue">Neutral</span>
+              </label>
+              <input
+                type="range"
+                id="tone"
+                min="-100"
+                max="100"
+                value="0"
+                step="1"
+                disabled
+              />
+              <div class="ticks">
+                <span>Warm</span>
+                <span>Neutral</span>
+                <span>Cool</span>
+              </div>
+            </div>
+
+            <div class="control-row" data-disabled="true" id="actionRow">
+              <button id="resetBtn" class="ghost" disabled>Reset</button>
+              <button id="replaceBtn" class="ghost" disabled>Replace photo</button>
+            </div>
+
+            <p class="disclaimer">
+              Visual guide only. Real rooms vary by fixture, finish, and daylight.
+            </p>
+          </div>
+        </aside>
+      </main>
+
+      <footer class="footer">
+        <p>Tip: dim first, then add warmth for nighttime comfort.</p>
+      </footer>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>

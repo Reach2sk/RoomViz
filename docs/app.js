@@ -87,9 +87,11 @@ function updateBeforeAfterUI() {
 
 function updateSliderLabels() {
   const brightness = Number(brightnessSlider.value);
-  let brightnessLabel = "Bright";
-  if (brightness < 45) brightnessLabel = "Soft / Cozy";
-  else if (brightness < 70) brightnessLabel = "Balanced";
+  let brightnessLabel = "Medium";
+  if (brightness <= 20) brightnessLabel = "Very Dim";
+  else if (brightness <= 45) brightnessLabel = "Dim";
+  else if (brightness <= 75) brightnessLabel = "Medium";
+  else brightnessLabel = "Bright";
 
   const tone = Number(toneSlider.value);
   let toneLabel = "Neutral";

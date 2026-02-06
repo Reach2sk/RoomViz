@@ -591,7 +591,8 @@ canvas {
 
   .hero {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: center;
+    text-align: center;
     margin-bottom: 10px;
   }
 
@@ -723,6 +724,8 @@ canvas {
   .has-photo .hero h1 {
     font-size: 22px;
     margin-bottom: 4px;
+    width: 100%;
+    text-align: center;
   }
 
   .has-photo .hero .subhead,

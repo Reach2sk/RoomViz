@@ -30,6 +30,10 @@
               <button id="replaceBtn" class="ghost ghost-small" disabled>Change photo</button>
             </div>
           </div>
+          <div id="sampleBanner" class="sample-banner" style="display:none">
+            <span>📷 Sample photo ·&nbsp;</span>
+            <button id="uploadOwnBtn" class="sample-banner-btn" type="button">Upload your own room</button>
+          </div>
           <div id="ahaToast" class="aha-toast" role="status" aria-live="polite">
             Notice how calmer it feels.
           </div>
@@ -66,7 +70,7 @@
             <div class="sheet-body">
               <div class="card-header">
                 <h2>Lighting controls</h2>
-                <p>Start with brightness. Then adjust warmth.</p>
+                <p>Adjust brightness and warmth to preview your room.</p>
               </div>
 
               <div class="control" data-disabled="true" id="brightnessControl">
@@ -74,7 +78,6 @@
                   Brightness
                   <span class="control-value" id="brightnessValue">Bright</span>
                 </label>
-                <p class="control-hint" id="brightnessHint">Try dimming.</p>
                 <input
                   type="range"
                   id="brightness"
@@ -97,7 +100,6 @@
                   Warmth
                   <span class="control-value" id="toneValue">Neutral</span>
                 </label>
-                <p class="control-hint is-hidden" id="toneHint">Now try warmth.</p>
                 <input
                   type="range"
                   id="tone"

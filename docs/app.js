@@ -8,8 +8,6 @@ const viewAdjustedBtn = document.getElementById("viewAdjusted");
 const viewOriginalBtn = document.getElementById("viewOriginal");
 const brightnessValue = document.getElementById("brightnessValue");
 const toneValue = document.getElementById("toneValue");
-const brightnessHint = document.getElementById("brightnessHint");
-const toneHint = document.getElementById("toneHint");
 const ahaToast = document.getElementById("ahaToast");
 const scrollHint = document.getElementById("scrollHint");
 const emptyState = document.getElementById("emptyState");
@@ -35,7 +33,7 @@ const DEFAULT_BRIGHTNESS = 70;
 const DEFAULT_TONE = 0;
 let adjustedBrightness = DEFAULT_BRIGHTNESS;
 let adjustedTone = DEFAULT_TONE;
-let toneUnlocked = false;
+let isSamplePhoto = false;
 let rafPending = false;
 let hasShownAha = false;
 let ahaTimer = null;
@@ -53,21 +51,18 @@ function clamp(value, min = 0, max = 1) {
 
 function setControlsEnabled(enabled) {
   brightnessSlider.disabled = !enabled;
-  toneSlider.disabled = !enabled || !toneUnlocked;
+  toneSlider.disabled = !enabled;
   replaceBtn.disabled = !enabled;
   viewAdjustedBtn.disabled = !enabled;
   viewOriginalBtn.disabled = !enabled;
   if (sheetToggle) sheetToggle.disabled = !enabled;
 
   brightnessControl.dataset.disabled = enabled ? "false" : "true";
-  toneControl.dataset.disabled = enabled && toneUnlocked ? "false" : "true";
+  toneControl.dataset.disabled = enabled ? "false" : "true";
   if (!enabled) {
     setScrollHint(false);
-    toneUnlocked = false;
     toneSlider.value = String(DEFAULT_TONE);
     updateSliderLabels();
-    if (toneHint) toneHint.classList.add("is-hidden");
-    if (brightnessHint) brightnessHint.classList.remove("is-hidden");
   }
 }
 
@@ -111,14 +106,6 @@ function showAhaToast() {
   }, 2000);
 }
 
-function unlockTone() {
-  if (toneUnlocked) return;
-  toneUnlocked = true;
-  toneControl.dataset.disabled = "false";
-  toneSlider.disabled = false;
-  if (toneHint) toneHint.classList.remove("is-hidden");
-  if (brightnessHint) brightnessHint.classList.add("is-hidden");
-}
 
 function setLoading(visible) {
   if (!loadingOverlay) return;
@@ -214,6 +201,13 @@ function render() {
   ctx.putImageData(outputImageData, 0, 0);
 }
 
+function hideSampleBanner() {
+  const banner = document.getElementById("sampleBanner");
+  if (banner && banner.style.display !== "none") {
+    banner.style.display = "none";
+  }
+}
+
 function resetControls() {
   adjustedBrightness = DEFAULT_BRIGHTNESS;
   adjustedTone = DEFAULT_TONE;
@@ -222,10 +216,6 @@ function resetControls() {
   showOriginal = false;
   updateBeforeAfterUI();
   updateSliderLabels();
-  if (!toneUnlocked) {
-    if (brightnessHint) brightnessHint.classList.remove("is-hidden");
-    if (toneHint) toneHint.classList.add("is-hidden");
-  }
   scheduleRender();
 }
 
@@ -244,13 +234,17 @@ function applyImageSource(imageSource) {
 
   emptyState.style.display = "none";
   document.body.classList.add("has-photo");
-  toneUnlocked = false;
   hasShownAha = false;
   setControlsEnabled(true);
   resetControls();
   setLoading(false);
   setScrollHint(true);
   initSheetState();
+
+  const banner = document.getElementById("sampleBanner");
+  if (banner) {
+    banner.style.display = isSamplePhoto ? "flex" : "none";
+  }
 }
 
 async function loadImage(file) {
@@ -298,41 +292,11 @@ function loadImageFromUrl(url) {
   });
 }
 
-const SAMPLE_SVG = `
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">
-  <defs>
-    <linearGradient id="wall" x1="0" x2="0" y1="0" y2="1">
-      <stop offset="0%" stop-color="#f7f4ef"/>
-      <stop offset="100%" stop-color="#ece5d9"/>
-    </linearGradient>
-    <linearGradient id="floor" x1="0" x2="0" y1="0" y2="1">
-      <stop offset="0%" stop-color="#d5c3ad"/>
-      <stop offset="100%" stop-color="#c2a88e"/>
-    </linearGradient>
-    <linearGradient id="window" x1="0" x2="1" y1="0" y2="1">
-      <stop offset="0%" stop-color="#cfe6f7"/>
-      <stop offset="100%" stop-color="#a8c9e8"/>
-    </linearGradient>
-  </defs>
-  <rect width="1200" height="800" fill="url(#wall)"/>
-  <rect y="520" width="1200" height="280" fill="url(#floor)"/>
-  <rect x="140" y="110" width="280" height="220" rx="16" fill="url(#window)" stroke="#d2dee8" stroke-width="12"/>
-  <rect x="470" y="350" width="520" height="180" rx="24" fill="#d9c3aa"/>
-  <rect x="510" y="300" width="440" height="80" rx="20" fill="#e6d2bc"/>
-  <rect x="540" y="520" width="380" height="40" rx="20" fill="#b6926e"/>
-  <circle cx="940" cy="270" r="50" fill="#f0d8b8"/>
-  <rect x="910" y="320" width="60" height="200" rx="18" fill="#c9b39a"/>
-  <rect x="910" y="520" width="60" height="10" fill="#a58c70"/>
-  <rect x="80" y="460" width="120" height="160" rx="20" fill="#3f6b60"/>
-  <circle cx="140" cy="430" r="70" fill="#4f7d6f"/>
-  <circle cx="110" cy="410" r="40" fill="#5a8b7c"/>
-  <circle cx="175" cy="410" r="35" fill="#5a8b7c"/>
-</svg>
-`;
-const SAMPLE_IMAGE_URL = `data:image/svg+xml;utf8,${encodeURIComponent(SAMPLE_SVG)}`;
+const SAMPLE_IMAGE_URL = "sample.jpg";
 
 async function loadSampleImage() {
   setLoading(true);
+  isSamplePhoto = true;
   try {
     const imageSource = await loadImageFromUrl(SAMPLE_IMAGE_URL);
     applyImageSource(imageSource);
@@ -351,6 +315,7 @@ function handleFiles(files) {
     return;
   }
 
+  isSamplePhoto = false;
   loadImage(file).catch(() => {
     setLoading(false);
     alert("Unable to load that image. Please try another.");
@@ -360,6 +325,11 @@ function handleFiles(files) {
 uploadBtn.addEventListener("click", () => fileInput.click());
 replaceBtn.addEventListener("click", () => fileInput.click());
 sampleBtn.addEventListener("click", () => loadSampleImage());
+
+const uploadOwnBtn = document.getElementById("uploadOwnBtn");
+if (uploadOwnBtn) {
+  uploadOwnBtn.addEventListener("click", () => fileInput.click());
+}
 
 fileInput.addEventListener("change", (event) => {
   handleFiles(event.target.files);
@@ -372,11 +342,9 @@ function handleSliderInput() {
     updateBeforeAfterUI();
   }
   setScrollHint(false);
+  hideSampleBanner();
   const brightness = Number(brightnessSlider.value);
   adjustedBrightness = brightness;
-  if (!toneUnlocked) {
-    unlockTone();
-  }
   if (!hasShownAha && brightness <= 40) {
     hasShownAha = true;
     showAhaToast();
@@ -393,8 +361,8 @@ function handleToneInput() {
     updateBeforeAfterUI();
     brightnessSlider.value = String(adjustedBrightness);
   }
+  hideSampleBanner();
   adjustedTone = Number(toneSlider.value);
-  if (toneHint) toneHint.classList.add("is-hidden");
   updateSliderLabels();
   scheduleRender();
 }
@@ -466,7 +434,9 @@ if (MOBILE_MEDIA.addEventListener) {
   });
 });
 
-setControlsEnabled(false);
 updateBeforeAfterUI();
 updateSliderLabels();
 initSheetState();
+
+// Auto-load sample photo on startup
+loadSampleImage();

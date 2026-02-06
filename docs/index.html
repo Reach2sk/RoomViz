@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Room Lighting Visualizer</title>
-    <link rel="stylesheet" href="styles.css?v=20260206-3" />
+    <link rel="stylesheet" href="styles.css?v=20260206-4" />
   </head>
   <body>
     <div class="page">
@@ -96,16 +96,19 @@
                   <span class="control-value" id="toneValue">Neutral</span>
                 </label>
                 <p class="control-hint is-hidden" id="toneHint">Now try warmth.</p>
-                <div class="tone-segmented" role="group" aria-label="Light tone">
-                  <button class="tone-btn" type="button" data-tone="-1" aria-pressed="false" disabled>
-                    Warm
-                  </button>
-                  <button class="tone-btn is-active" type="button" data-tone="0" aria-pressed="true" disabled>
-                    Neutral
-                  </button>
-                  <button class="tone-btn" type="button" data-tone="1" aria-pressed="false" disabled>
-                    Cool
-                  </button>
+                <input
+                  type="range"
+                  id="tone"
+                  min="-100"
+                  max="100"
+                  value="0"
+                  step="1"
+                  disabled
+                />
+                <div class="ticks">
+                  <span>Warm</span>
+                  <span>Neutral</span>
+                  <span>Cool</span>
                 </div>
               </div>
 
@@ -122,6 +125,6 @@
       </footer>
     </div>
 
-    <script src="app.js?v=20260206-3"></script>
+    <script src="app.js?v=20260206-4"></script>
   </body>
 </html>

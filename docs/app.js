@@ -3,6 +3,7 @@ const uploadBtn = document.getElementById("uploadBtn");
 const sampleBtn = document.getElementById("sampleBtn");
 const replaceBtn = document.getElementById("replaceBtn");
 const brightnessSlider = document.getElementById("brightness");
+const toneSlider = document.getElementById("tone");
 const viewAdjustedBtn = document.getElementById("viewAdjusted");
 const viewOriginalBtn = document.getElementById("viewOriginal");
 const brightnessValue = document.getElementById("brightnessValue");
@@ -24,7 +25,6 @@ let sheetExpanded = false;
 
 const brightnessControl = document.getElementById("brightnessControl");
 const toneControl = document.getElementById("toneControl");
-const toneButtons = Array.from(document.querySelectorAll(".tone-btn"));
 
 const ctx = canvas.getContext("2d", { willReadFrequently: true });
 
@@ -35,7 +35,6 @@ const DEFAULT_BRIGHTNESS = 70;
 const DEFAULT_TONE = 0;
 let adjustedBrightness = DEFAULT_BRIGHTNESS;
 let adjustedTone = DEFAULT_TONE;
-let toneSelection = DEFAULT_TONE;
 let toneUnlocked = false;
 let rafPending = false;
 let hasShownAha = false;
@@ -54,6 +53,7 @@ function clamp(value, min = 0, max = 1) {
 
 function setControlsEnabled(enabled) {
   brightnessSlider.disabled = !enabled;
+  toneSlider.disabled = !enabled || !toneUnlocked;
   replaceBtn.disabled = !enabled;
   viewAdjustedBtn.disabled = !enabled;
   viewOriginalBtn.disabled = !enabled;
@@ -61,14 +61,11 @@ function setControlsEnabled(enabled) {
 
   brightnessControl.dataset.disabled = enabled ? "false" : "true";
   toneControl.dataset.disabled = enabled && toneUnlocked ? "false" : "true";
-  toneButtons.forEach((button) => {
-    button.disabled = !enabled || !toneUnlocked;
-  });
   if (!enabled) {
     setScrollHint(false);
     toneUnlocked = false;
-    toneSelection = DEFAULT_TONE;
-    updateToneUI();
+    toneSlider.value = String(DEFAULT_TONE);
+    updateSliderLabels();
     if (toneHint) toneHint.classList.add("is-hidden");
     if (brightnessHint) brightnessHint.classList.remove("is-hidden");
   }
@@ -94,22 +91,13 @@ function updateSliderLabels() {
   if (brightness < 45) brightnessLabel = "Soft / Cozy";
   else if (brightness < 70) brightnessLabel = "Balanced";
 
+  const tone = Number(toneSlider.value);
   let toneLabel = "Neutral";
-  if (toneSelection < 0) toneLabel = "Warm";
-  if (toneSelection > 0) toneLabel = "Cool";
+  if (tone < -35) toneLabel = "Warm";
+  if (tone > 35) toneLabel = "Cool";
 
   brightnessValue.textContent = brightnessLabel;
   toneValue.textContent = toneLabel;
-}
-
-function updateToneUI() {
-  toneButtons.forEach((button) => {
-    const value = Number(button.dataset.tone);
-    const isActive = value === toneSelection;
-    button.classList.toggle("is-active", isActive);
-    button.setAttribute("aria-pressed", isActive ? "true" : "false");
-  });
-  updateSliderLabels();
 }
 
 function showAhaToast() {
@@ -125,9 +113,7 @@ function unlockTone() {
   if (toneUnlocked) return;
   toneUnlocked = true;
   toneControl.dataset.disabled = "false";
-  toneButtons.forEach((button) => {
-    button.disabled = false;
-  });
+  toneSlider.disabled = false;
   if (toneHint) toneHint.classList.remove("is-hidden");
   if (brightnessHint) brightnessHint.classList.add("is-hidden");
 }
@@ -183,7 +169,7 @@ function render() {
   }
 
   const brightness = Number(brightnessSlider.value) / 100;
-  const tone = toneSelection * 0.8;
+  const tone = Number(toneSlider.value) / 100;
 
   const exposure = lerp(0.3, 1.15, brightness);
   const contrast = lerp(1.15, 0.95, brightness);
@@ -230,10 +216,10 @@ function resetControls() {
   adjustedBrightness = DEFAULT_BRIGHTNESS;
   adjustedTone = DEFAULT_TONE;
   brightnessSlider.value = String(DEFAULT_BRIGHTNESS);
-  toneSelection = DEFAULT_TONE;
+  toneSlider.value = String(DEFAULT_TONE);
   showOriginal = false;
   updateBeforeAfterUI();
-  updateToneUI();
+  updateSliderLabels();
   if (!toneUnlocked) {
     if (brightnessHint) brightnessHint.classList.remove("is-hidden");
     if (toneHint) toneHint.classList.add("is-hidden");
@@ -399,25 +385,39 @@ function handleSliderInput() {
 
 brightnessSlider.addEventListener("input", handleSliderInput);
 
+function handleToneInput() {
+  if (showOriginal) {
+    showOriginal = false;
+    updateBeforeAfterUI();
+    brightnessSlider.value = String(adjustedBrightness);
+  }
+  adjustedTone = Number(toneSlider.value);
+  if (toneHint) toneHint.classList.add("is-hidden");
+  updateSliderLabels();
+  scheduleRender();
+}
+
+toneSlider.addEventListener("input", handleToneInput);
+
 viewAdjustedBtn.addEventListener("click", () => {
   showOriginal = false;
   brightnessSlider.value = String(adjustedBrightness);
-  toneSelection = adjustedTone;
+  toneSlider.value = String(adjustedTone);
   updateBeforeAfterUI();
-  updateToneUI();
+  updateSliderLabels();
   scheduleRender();
 });
 
 viewOriginalBtn.addEventListener("click", () => {
   if (!showOriginal) {
     adjustedBrightness = Number(brightnessSlider.value);
-    adjustedTone = toneSelection;
+    adjustedTone = Number(toneSlider.value);
   }
   showOriginal = true;
   brightnessSlider.value = String(DEFAULT_BRIGHTNESS);
-  toneSelection = DEFAULT_TONE;
+  toneSlider.value = String(DEFAULT_TONE);
   updateBeforeAfterUI();
-  updateToneUI();
+  updateSliderLabels();
   scheduleRender();
 });
 
@@ -438,22 +438,6 @@ if (sheetToggle) {
     setSheetState(!sheetExpanded);
   });
 }
-
-toneButtons.forEach((button) => {
-  button.addEventListener("click", () => {
-    if (button.disabled) return;
-    if (showOriginal) {
-      showOriginal = false;
-      updateBeforeAfterUI();
-      brightnessSlider.value = String(adjustedBrightness);
-    }
-    toneSelection = Number(button.dataset.tone);
-    adjustedTone = toneSelection;
-    updateToneUI();
-    if (toneHint) toneHint.classList.add("is-hidden");
-    scheduleRender();
-  });
-});
 
 if (MOBILE_MEDIA.addEventListener) {
   MOBILE_MEDIA.addEventListener("change", initSheetState);
@@ -482,5 +466,5 @@ if (MOBILE_MEDIA.addEventListener) {
 
 setControlsEnabled(false);
 updateBeforeAfterUI();
-updateToneUI();
+updateSliderLabels();
 initSheetState();

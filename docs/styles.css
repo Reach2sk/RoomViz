@@ -418,35 +418,6 @@ canvas {
   justify-content: space-between;
 }
 
-.tone-segmented {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
-}
-
-.tone-btn {
-  border: 1px solid var(--border);
-  background: #f5f5f7;
-  color: var(--muted);
-  border-radius: 999px;
-  padding: 8px 10px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
-}
-
-.tone-btn.is-active {
-  background: var(--surface);
-  color: var(--ink);
-  border-color: #c7c7cc;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-}
-
-.tone-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
 
 .control-row {
   display: flex;
@@ -509,6 +480,14 @@ canvas {
 
 #brightness::-moz-range-track {
   background: linear-gradient(90deg, #b8b8bd 0%, #f0f0f3 100%);
+}
+
+#tone {
+  background: linear-gradient(90deg, #e08b61 0%, #ececec 50%, #84b6d6 100%);
+}
+
+#tone::-moz-range-track {
+  background: linear-gradient(90deg, #e08b61 0%, #ececec 50%, #84b6d6 100%);
 }
 
 @keyframes rise {

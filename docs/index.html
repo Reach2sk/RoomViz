@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Room Lighting Visualizer</title>
-    <link rel="stylesheet" href="styles.css?v=20260206-9" />
+    <link rel="stylesheet" href="styles.css?v=20260206-10" />
   </head>
   <body>
     <div class="page">
@@ -19,7 +19,7 @@
           <div class="canvas-wrap" id="canvasWrap">
             <canvas id="roomCanvas" width="960" height="640"></canvas>
             <div class="stage-overlay">
-              <div class="segmented" role="tablist" aria-label="View mode">
+              <div class="segmented desktop-only" role="tablist" aria-label="View mode">
                 <button id="viewAdjusted" class="segmented-btn is-active" aria-selected="true" disabled>
                   Adjusted
                 </button>
@@ -27,11 +27,19 @@
                   Original
                 </button>
               </div>
-              <button id="replaceBtn" class="ghost ghost-small" disabled>Change photo</button>
+              <button id="viewToggleBtn" class="ghost ghost-small mobile-only" disabled>
+                Original
+              </button>
+              <button id="replaceBtn" class="ghost ghost-small" disabled>Change</button>
             </div>
 
             <!-- Mobile overlay controls (inside canvas-wrap, over the image) -->
-            <div class="mobile-controls" id="mobileControls">
+            <div class="mobile-controls is-collapsed" id="mobileControls">
+              <button id="mcToggle" class="mc-toggle" type="button" disabled>
+                <span class="mc-handle" aria-hidden="true"></span>
+                <span class="mc-label">Adjust lighting</span>
+                <span class="mc-chevron" aria-hidden="true"></span>
+              </button>
               <div class="mobile-controls-inner">
                 <div class="mc-row">
                   <span class="mc-label">Brightness</span>
@@ -164,6 +172,6 @@
       </footer>
     </div>
 
-    <script src="app.js?v=20260206-9"></script>
+    <script src="app.js?v=20260206-10"></script>
   </body>
 </html>

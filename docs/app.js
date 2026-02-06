@@ -8,6 +8,7 @@ const brightnessSlider = document.getElementById("brightness");
 const toneSlider = document.getElementById("tone");
 const viewAdjustedBtn = document.getElementById("viewAdjusted");
 const viewOriginalBtn = document.getElementById("viewOriginal");
+const viewToggleBtn = document.getElementById("viewToggleBtn");
 const brightnessValue = document.getElementById("brightnessValue");
 const toneValue = document.getElementById("toneValue");
 const ahaToast = document.getElementById("ahaToast");
@@ -21,6 +22,8 @@ const controlsPanel = document.getElementById("controlsPanel");
 const sheetToggle = document.getElementById("sheetToggle");
 
 // Mobile overlay controls
+const mobileControls = document.getElementById("mobileControls");
+const mcToggle = document.getElementById("mcToggle");
 const mcBrightness = document.getElementById("mcBrightness");
 const mcTone = document.getElementById("mcTone");
 const mcBrightnessValue = document.getElementById("mcBrightnessValue");
@@ -28,6 +31,11 @@ const mcToneValue = document.getElementById("mcToneValue");
 
 const MOBILE_MEDIA = window.matchMedia("(max-width: 640px), (pointer: coarse)");
 let sheetExpanded = false;
+let autoCollapseTimer = null;
+const AUTO_COLLAPSE_MS = 2600;
+let mcExpanded = false;
+let mcAutoTimer = null;
+const MC_AUTO_MS = 2600;
 
 const brightnessControl = document.getElementById("brightnessControl");
 const toneControl = document.getElementById("toneControl");
@@ -63,11 +71,13 @@ function setControlsEnabled(enabled) {
   replaceBtn.disabled = !enabled;
   viewAdjustedBtn.disabled = !enabled;
   viewOriginalBtn.disabled = !enabled;
+  if (viewToggleBtn) viewToggleBtn.disabled = !enabled;
   if (sheetToggle) sheetToggle.disabled = !enabled;
 
   // Mobile controls
   if (mcBrightness) mcBrightness.disabled = !enabled;
   if (mcTone) mcTone.disabled = !enabled;
+  if (mcToggle) mcToggle.disabled = !enabled;
 
   brightnessControl.dataset.disabled = enabled ? "false" : "true";
   toneControl.dataset.disabled = enabled ? "false" : "true";
@@ -76,6 +86,7 @@ function setControlsEnabled(enabled) {
     toneSlider.value = String(DEFAULT_TONE);
     if (mcTone) mcTone.value = String(DEFAULT_TONE);
     updateSliderLabels();
+    setMobileControls(false);
   }
 }
 
@@ -85,11 +96,13 @@ function updateBeforeAfterUI() {
     viewAdjustedBtn.classList.remove("is-active");
     viewOriginalBtn.setAttribute("aria-selected", "true");
     viewAdjustedBtn.setAttribute("aria-selected", "false");
+    if (viewToggleBtn) viewToggleBtn.textContent = "Adjusted";
   } else {
     viewAdjustedBtn.classList.add("is-active");
     viewOriginalBtn.classList.remove("is-active");
     viewAdjustedBtn.setAttribute("aria-selected", "true");
     viewOriginalBtn.setAttribute("aria-selected", "false");
+    if (viewToggleBtn) viewToggleBtn.textContent = "Original";
   }
 }
 
@@ -150,14 +163,52 @@ function setSheetState(expanded) {
   sheetExpanded = expanded;
   controlsPanel.classList.toggle("is-expanded", expanded);
   controlsPanel.classList.toggle("is-collapsed", !expanded);
+  if (autoCollapseTimer) {
+    window.clearTimeout(autoCollapseTimer);
+    autoCollapseTimer = null;
+  }
+  if (expanded) {
+    scheduleAutoCollapse();
+  }
 }
 
 function initSheetState() {
   if (MOBILE_MEDIA.matches) {
     setSheetState(false);
+    setMobileControls(false);
   } else {
     setSheetState(true);
   }
+}
+
+function setMobileControls(expanded) {
+  if (!mobileControls) return;
+  mcExpanded = expanded;
+  mobileControls.classList.toggle("is-expanded", expanded);
+  mobileControls.classList.toggle("is-collapsed", !expanded);
+  if (mcAutoTimer) {
+    window.clearTimeout(mcAutoTimer);
+    mcAutoTimer = null;
+  }
+  if (expanded) {
+    scheduleMobileCollapse();
+  }
+}
+
+function scheduleMobileCollapse() {
+  if (!MOBILE_MEDIA.matches || !mcExpanded) return;
+  if (mcAutoTimer) window.clearTimeout(mcAutoTimer);
+  mcAutoTimer = window.setTimeout(() => {
+    setMobileControls(false);
+  }, MC_AUTO_MS);
+}
+
+function scheduleAutoCollapse() {
+  if (!MOBILE_MEDIA.matches || !sheetExpanded) return;
+  if (autoCollapseTimer) window.clearTimeout(autoCollapseTimer);
+  autoCollapseTimer = window.setTimeout(() => {
+    setSheetState(false);
+  }, AUTO_COLLAPSE_MS);
 }
 
 function maybeHideScrollHint() {
@@ -270,6 +321,7 @@ function applyImageSource(imageSource) {
   setLoading(false);
   setScrollHint(true);
   initSheetState();
+  setMobileControls(false);
 
   const banner = document.getElementById("sampleBanner");
   if (banner) {
@@ -375,6 +427,8 @@ function handleBrightnessChange(source) {
   }
   setScrollHint(false);
   hideSampleBanner();
+  scheduleAutoCollapse();
+  scheduleMobileCollapse();
 
   syncSliders(source);
 
@@ -396,6 +450,8 @@ function handleToneChange(source) {
     if (mcBrightness) mcBrightness.value = String(adjustedBrightness);
   }
   hideSampleBanner();
+  scheduleAutoCollapse();
+  scheduleMobileCollapse();
 
   syncSliders(source);
 
@@ -440,6 +496,16 @@ viewOriginalBtn.addEventListener("click", () => {
   scheduleRender();
 });
 
+if (viewToggleBtn) {
+  viewToggleBtn.addEventListener("click", () => {
+    if (showOriginal) {
+      viewAdjustedBtn.click();
+    } else {
+      viewOriginalBtn.click();
+    }
+  });
+}
+
 window.addEventListener("scroll", maybeHideScrollHint, { passive: true });
 
 if (scrollHint) {
@@ -455,6 +521,13 @@ if (sheetToggle) {
   sheetToggle.addEventListener("click", () => {
     if (!MOBILE_MEDIA.matches) return;
     setSheetState(!sheetExpanded);
+  });
+}
+
+if (mcToggle) {
+  mcToggle.addEventListener("click", () => {
+    if (!MOBILE_MEDIA.matches) return;
+    setMobileControls(!mcExpanded);
   });
 }
 
@@ -486,6 +559,7 @@ if (MOBILE_MEDIA.addEventListener) {
 updateBeforeAfterUI();
 updateSliderLabels();
 initSheetState();
+setMobileControls(false);
 
 // Auto-load sample photo on startup
 loadSampleImage();

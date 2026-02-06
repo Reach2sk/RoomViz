@@ -251,18 +251,58 @@ canvas {
   padding: 22px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
   box-shadow: var(--shadow);
   animation: rise 0.7s ease 0.08s both;
 }
 
-.sheet-handle {
+.sheet-toggle {
   display: none;
+  border: none;
+  background: transparent;
+  padding: 6px 4px 10px;
+  cursor: pointer;
+  text-align: center;
+}
+
+.sheet-handle {
+  display: block;
   width: 40px;
   height: 4px;
   border-radius: 999px;
   background: #d2d2d7;
-  margin: 2px auto 10px;
+  margin: 2px auto 6px;
+}
+
+.sheet-label {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.sheet-chevron {
+  display: block;
+  width: 10px;
+  height: 10px;
+  border-right: 2px solid #b0b0b5;
+  border-bottom: 2px solid #b0b0b5;
+  margin: 6px auto 0;
+  transform: rotate(45deg);
+  transition: transform 0.2s ease;
+}
+
+.controls.is-expanded .sheet-chevron {
+  transform: rotate(-135deg);
+}
+
+.sheet-body {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  overflow: hidden;
+  transition: max-height 0.25s ease, opacity 0.2s ease;
 }
 
 .card-header h2 {
@@ -491,16 +531,35 @@ canvas {
 
   .controls .card {
     border-radius: 20px 20px 0 0;
-    padding: 14px 14px 16px;
+    padding: 10px 14px 12px;
     box-shadow: 0 -16px 40px rgba(0, 0, 0, 0.16);
     animation: rise 0.5s ease both;
-    max-height: 30vh;
+  }
+
+  .sheet-toggle {
+    display: block;
+  }
+
+  .controls.is-collapsed .sheet-body {
+    max-height: 0;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .controls.is-expanded .sheet-body {
+    max-height: 55vh;
+    opacity: 1;
+    pointer-events: auto;
     overflow: auto;
     -webkit-overflow-scrolling: touch;
   }
 
-  .sheet-handle {
-    display: block;
+  .controls.is-collapsed .sheet-label {
+    color: var(--ink);
+  }
+
+  .controls.is-collapsed .card {
+    padding-bottom: 10px;
   }
 
   .scroll-hint.is-visible {

@@ -16,6 +16,10 @@ const canvasWrap = document.getElementById("canvasWrap");
 const stage = document.getElementById("stage");
 const loadingOverlay = document.getElementById("loadingOverlay");
 const controlsPanel = document.getElementById("controlsPanel");
+const sheetToggle = document.getElementById("sheetToggle");
+
+const MOBILE_MEDIA = window.matchMedia("(max-width: 640px), (pointer: coarse)");
+let sheetExpanded = false;
 
 const brightnessControl = document.getElementById("brightnessControl");
 const toneControl = document.getElementById("toneControl");
@@ -50,6 +54,7 @@ function setControlsEnabled(enabled) {
   replaceBtn.disabled = !enabled;
   viewAdjustedBtn.disabled = !enabled;
   viewOriginalBtn.disabled = !enabled;
+  if (sheetToggle) sheetToggle.disabled = !enabled;
 
   brightnessControl.dataset.disabled = enabled ? "false" : "true";
   toneControl.dataset.disabled = enabled ? "false" : "true";
@@ -98,6 +103,21 @@ function setLoading(visible) {
 function setScrollHint(visible) {
   if (!scrollHint) return;
   scrollHint.classList.toggle("is-visible", visible);
+}
+
+function setSheetState(expanded) {
+  if (!controlsPanel) return;
+  sheetExpanded = expanded;
+  controlsPanel.classList.toggle("is-expanded", expanded);
+  controlsPanel.classList.toggle("is-collapsed", !expanded);
+}
+
+function initSheetState() {
+  if (MOBILE_MEDIA.matches) {
+    setSheetState(false);
+  } else {
+    setSheetState(true);
+  }
 }
 
 function maybeHideScrollHint() {
@@ -199,6 +219,7 @@ function applyImageSource(imageSource) {
   resetControls();
   setLoading(false);
   setScrollHint(true);
+  initSheetState();
 }
 
 async function loadImage(file) {
@@ -364,6 +385,19 @@ if (scrollHint) {
   });
 }
 
+if (sheetToggle) {
+  sheetToggle.addEventListener("click", () => {
+    if (!MOBILE_MEDIA.matches) return;
+    setSheetState(!sheetExpanded);
+  });
+}
+
+if (MOBILE_MEDIA.addEventListener) {
+  MOBILE_MEDIA.addEventListener("change", initSheetState);
+} else if (MOBILE_MEDIA.addListener) {
+  MOBILE_MEDIA.addListener(initSheetState);
+}
+
 [stage, canvasWrap].forEach((element) => {
   element.addEventListener("dragover", (event) => {
     event.preventDefault();
@@ -386,3 +420,4 @@ if (scrollHint) {
 setControlsEnabled(false);
 updateBeforeAfterUI();
 updateSliderLabels();
+initSheetState();

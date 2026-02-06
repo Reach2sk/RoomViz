@@ -57,63 +57,70 @@
 
         <aside class="controls" id="controlsPanel" aria-label="Lighting controls">
           <div class="card">
-            <div class="sheet-handle" aria-hidden="true"></div>
-            <div class="card-header">
-              <h2>Lighting controls</h2>
-              <p>Start with brightness. Then adjust warmth.</p>
-            </div>
+            <button id="sheetToggle" class="sheet-toggle" type="button" disabled>
+              <span class="sheet-handle" aria-hidden="true"></span>
+              <span class="sheet-label">Adjust lighting</span>
+              <span class="sheet-chevron" aria-hidden="true"></span>
+            </button>
 
-            <div class="control" data-disabled="true" id="brightnessControl">
-              <label for="brightness">
-                How bright does it feel?
-                <span class="control-value" id="brightnessValue">Medium</span>
-              </label>
-              <input
-                type="range"
-                id="brightness"
-                min="0"
-                max="100"
-                value="70"
-                step="1"
-                disabled
-              />
-              <div class="ticks">
-                <span>Very Dim</span>
-                <span>Dim</span>
-                <span>Medium</span>
-                <span>Bright</span>
+            <div class="sheet-body">
+              <div class="card-header">
+                <h2>Lighting controls</h2>
+                <p>Start with brightness. Then adjust warmth.</p>
               </div>
-            </div>
 
-            <div class="control" data-disabled="true" id="toneControl">
-              <label for="tone">
-                How warm or cool?
-                <span class="control-value" id="toneValue">Neutral</span>
-              </label>
-              <input
-                type="range"
-                id="tone"
-                min="-100"
-                max="100"
-                value="0"
-                step="1"
-                disabled
-              />
-              <div class="ticks">
-                <span>Warm</span>
-                <span>Neutral</span>
-                <span>Cool</span>
+              <div class="control" data-disabled="true" id="brightnessControl">
+                <label for="brightness">
+                  How bright does it feel?
+                  <span class="control-value" id="brightnessValue">Medium</span>
+                </label>
+                <input
+                  type="range"
+                  id="brightness"
+                  min="0"
+                  max="100"
+                  value="70"
+                  step="1"
+                  disabled
+                />
+                <div class="ticks">
+                  <span>Very Dim</span>
+                  <span>Dim</span>
+                  <span>Medium</span>
+                  <span>Bright</span>
+                </div>
               </div>
-            </div>
 
-            <div class="control-row" data-disabled="true" id="actionRow">
-              <button id="resetBtn" class="ghost" disabled>Reset</button>
-              <button id="replaceBtn" class="ghost" disabled>Replace photo</button>
-            </div>
+              <div class="control" data-disabled="true" id="toneControl">
+                <label for="tone">
+                  How warm or cool?
+                  <span class="control-value" id="toneValue">Neutral</span>
+                </label>
+                <input
+                  type="range"
+                  id="tone"
+                  min="-100"
+                  max="100"
+                  value="0"
+                  step="1"
+                  disabled
+                />
+                <div class="ticks">
+                  <span>Warm</span>
+                  <span>Neutral</span>
+                  <span>Cool</span>
+                </div>
+              </div>
 
-            <p class="disclaimer">
-              Visual guide only. Real rooms vary by fixture, finish, and daylight.
-            </p>
+              <div class="control-row" data-disabled="true" id="actionRow">
+                <button id="resetBtn" class="ghost" disabled>Reset</button>
+                <button id="replaceBtn" class="ghost" disabled>Replace photo</button>
+              </div>
+
+              <p class="disclaimer">
+                Visual guide only. Real rooms vary by fixture, finish, and daylight.
+              </p>
+            </div>
           </div>
         </aside>
       </main>

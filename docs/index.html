@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Room Lighting Visualizer</title>
-    <link rel="stylesheet" href="styles.css?v=20260206-1" />
+    <link rel="stylesheet" href="styles.css?v=20260206-2" />
   </head>
   <body>
     <div class="page">
@@ -32,6 +32,9 @@
                 </button>
               </div>
             </div>
+          </div>
+          <div id="ahaToast" class="aha-toast" role="status" aria-live="polite">
+            Notice how calmer it feels.
           </div>
           <button id="scrollHint" class="scroll-hint" type="button">
             Adjust lighting below
@@ -72,8 +75,9 @@
               <div class="control" data-disabled="true" id="brightnessControl">
                 <label for="brightness">
                   How bright does it feel?
-                  <span class="control-value" id="brightnessValue">Medium</span>
+                  <span class="control-value" id="brightnessValue">Bright</span>
                 </label>
+                <p class="control-hint" id="brightnessHint">Try dimming.</p>
                 <input
                   type="range"
                   id="brightness"
@@ -83,32 +87,28 @@
                   step="1"
                   disabled
                 />
-                <div class="ticks">
-                  <span>Very Dim</span>
-                  <span>Dim</span>
-                  <span>Medium</span>
+                <div class="ticks ticks-ends">
                   <span>Bright</span>
+                  <span>Soft / Cozy</span>
                 </div>
               </div>
 
               <div class="control" data-disabled="true" id="toneControl">
-                <label for="tone">
+                <label>
                   How warm or cool?
                   <span class="control-value" id="toneValue">Neutral</span>
                 </label>
-                <input
-                  type="range"
-                  id="tone"
-                  min="-100"
-                  max="100"
-                  value="0"
-                  step="1"
-                  disabled
-                />
-                <div class="ticks">
-                  <span>Warm</span>
-                  <span>Neutral</span>
-                  <span>Cool</span>
+                <p class="control-hint is-hidden" id="toneHint">Now try warmth.</p>
+                <div class="tone-segmented" role="group" aria-label="Light tone">
+                  <button class="tone-btn" type="button" data-tone="-1" aria-pressed="false" disabled>
+                    Warm
+                  </button>
+                  <button class="tone-btn is-active" type="button" data-tone="0" aria-pressed="true" disabled>
+                    Neutral
+                  </button>
+                  <button class="tone-btn" type="button" data-tone="1" aria-pressed="false" disabled>
+                    Cool
+                  </button>
                 </div>
               </div>
 
@@ -130,6 +130,6 @@
       </footer>
     </div>
 
-    <script src="app.js?v=20260206-1"></script>
+    <script src="app.js?v=20260206-2"></script>
   </body>
 </html>

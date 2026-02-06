@@ -4,11 +4,13 @@ const sampleBtn = document.getElementById("sampleBtn");
 const replaceBtn = document.getElementById("replaceBtn");
 const resetBtn = document.getElementById("resetBtn");
 const brightnessSlider = document.getElementById("brightness");
-const toneSlider = document.getElementById("tone");
 const viewAdjustedBtn = document.getElementById("viewAdjusted");
 const viewOriginalBtn = document.getElementById("viewOriginal");
 const brightnessValue = document.getElementById("brightnessValue");
 const toneValue = document.getElementById("toneValue");
+const brightnessHint = document.getElementById("brightnessHint");
+const toneHint = document.getElementById("toneHint");
+const ahaToast = document.getElementById("ahaToast");
 const scrollHint = document.getElementById("scrollHint");
 const emptyState = document.getElementById("emptyState");
 const canvas = document.getElementById("roomCanvas");
@@ -24,6 +26,7 @@ let sheetExpanded = false;
 const brightnessControl = document.getElementById("brightnessControl");
 const toneControl = document.getElementById("toneControl");
 const actionRow = document.getElementById("actionRow");
+const toneButtons = Array.from(document.querySelectorAll(".tone-btn"));
 
 const ctx = canvas.getContext("2d", { willReadFrequently: true });
 
@@ -34,7 +37,11 @@ const DEFAULT_BRIGHTNESS = 70;
 const DEFAULT_TONE = 0;
 let adjustedBrightness = DEFAULT_BRIGHTNESS;
 let adjustedTone = DEFAULT_TONE;
+let toneSelection = DEFAULT_TONE;
+let toneUnlocked = false;
 let rafPending = false;
+let hasShownAha = false;
+let ahaTimer = null;
 
 const MAX_WIDTH = 1200;
 const MAX_HEIGHT = 800;
@@ -49,7 +56,6 @@ function clamp(value, min = 0, max = 1) {
 
 function setControlsEnabled(enabled) {
   brightnessSlider.disabled = !enabled;
-  toneSlider.disabled = !enabled;
   resetBtn.disabled = !enabled;
   replaceBtn.disabled = !enabled;
   viewAdjustedBtn.disabled = !enabled;
@@ -57,10 +63,18 @@ function setControlsEnabled(enabled) {
   if (sheetToggle) sheetToggle.disabled = !enabled;
 
   brightnessControl.dataset.disabled = enabled ? "false" : "true";
-  toneControl.dataset.disabled = enabled ? "false" : "true";
+  toneControl.dataset.disabled = enabled && toneUnlocked ? "false" : "true";
   actionRow.dataset.disabled = enabled ? "false" : "true";
+  toneButtons.forEach((button) => {
+    button.disabled = !enabled || !toneUnlocked;
+  });
   if (!enabled) {
     setScrollHint(false);
+    toneUnlocked = false;
+    toneSelection = DEFAULT_TONE;
+    updateToneUI();
+    if (toneHint) toneHint.classList.add("is-hidden");
+    if (brightnessHint) brightnessHint.classList.remove("is-hidden");
   }
 }
 
@@ -80,19 +94,46 @@ function updateBeforeAfterUI() {
 
 function updateSliderLabels() {
   const brightness = Number(brightnessSlider.value);
-  let brightnessLabel = "Medium";
-  if (brightness <= 20) brightnessLabel = "Very Dim";
-  else if (brightness <= 45) brightnessLabel = "Dim";
-  else if (brightness <= 75) brightnessLabel = "Medium";
-  else brightnessLabel = "Bright";
+  let brightnessLabel = "Bright";
+  if (brightness < 45) brightnessLabel = "Soft / Cozy";
+  else if (brightness < 70) brightnessLabel = "Balanced";
 
-  const tone = Number(toneSlider.value);
   let toneLabel = "Neutral";
-  if (tone < -35) toneLabel = "Warm";
-  else if (tone > 35) toneLabel = "Cool";
+  if (toneSelection < 0) toneLabel = "Warm";
+  if (toneSelection > 0) toneLabel = "Cool";
 
   brightnessValue.textContent = brightnessLabel;
   toneValue.textContent = toneLabel;
+}
+
+function updateToneUI() {
+  toneButtons.forEach((button) => {
+    const value = Number(button.dataset.tone);
+    const isActive = value === toneSelection;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-pressed", isActive ? "true" : "false");
+  });
+  updateSliderLabels();
+}
+
+function showAhaToast() {
+  if (!ahaToast) return;
+  ahaToast.classList.add("is-visible");
+  if (ahaTimer) window.clearTimeout(ahaTimer);
+  ahaTimer = window.setTimeout(() => {
+    ahaToast.classList.remove("is-visible");
+  }, 2000);
+}
+
+function unlockTone() {
+  if (toneUnlocked) return;
+  toneUnlocked = true;
+  toneControl.dataset.disabled = "false";
+  toneButtons.forEach((button) => {
+    button.disabled = false;
+  });
+  if (toneHint) toneHint.classList.remove("is-hidden");
+  if (brightnessHint) brightnessHint.classList.add("is-hidden");
 }
 
 function setLoading(visible) {
@@ -146,7 +187,7 @@ function render() {
   }
 
   const brightness = Number(brightnessSlider.value) / 100;
-  const tone = Number(toneSlider.value) / 100;
+  const tone = toneSelection * 0.8;
 
   const exposure = lerp(0.3, 1.15, brightness);
   const contrast = lerp(1.15, 0.95, brightness);
@@ -193,10 +234,14 @@ function resetControls() {
   adjustedBrightness = DEFAULT_BRIGHTNESS;
   adjustedTone = DEFAULT_TONE;
   brightnessSlider.value = String(DEFAULT_BRIGHTNESS);
-  toneSlider.value = String(DEFAULT_TONE);
+  toneSelection = DEFAULT_TONE;
   showOriginal = false;
   updateBeforeAfterUI();
-  updateSliderLabels();
+  updateToneUI();
+  if (!toneUnlocked) {
+    if (brightnessHint) brightnessHint.classList.remove("is-hidden");
+    if (toneHint) toneHint.classList.add("is-hidden");
+  }
   scheduleRender();
 }
 
@@ -215,6 +260,8 @@ function applyImageSource(imageSource) {
 
   emptyState.style.display = "none";
   document.body.classList.add("has-photo");
+  toneUnlocked = false;
+  hasShownAha = false;
   setControlsEnabled(true);
   resetControls();
   setLoading(false);
@@ -341,36 +388,42 @@ function handleSliderInput() {
     updateBeforeAfterUI();
   }
   setScrollHint(false);
-  adjustedBrightness = Number(brightnessSlider.value);
-  adjustedTone = Number(toneSlider.value);
+  const brightness = Number(brightnessSlider.value);
+  adjustedBrightness = brightness;
+  if (!toneUnlocked) {
+    unlockTone();
+  }
+  if (!hasShownAha && brightness <= 40) {
+    hasShownAha = true;
+    showAhaToast();
+  }
   updateSliderLabels();
   scheduleRender();
 }
 
 brightnessSlider.addEventListener("input", handleSliderInput);
-toneSlider.addEventListener("input", handleSliderInput);
 
 resetBtn.addEventListener("click", resetControls);
 
 viewAdjustedBtn.addEventListener("click", () => {
   showOriginal = false;
   brightnessSlider.value = String(adjustedBrightness);
-  toneSlider.value = String(adjustedTone);
+  toneSelection = adjustedTone;
   updateBeforeAfterUI();
-  updateSliderLabels();
+  updateToneUI();
   scheduleRender();
 });
 
 viewOriginalBtn.addEventListener("click", () => {
   if (!showOriginal) {
     adjustedBrightness = Number(brightnessSlider.value);
-    adjustedTone = Number(toneSlider.value);
+    adjustedTone = toneSelection;
   }
   showOriginal = true;
   brightnessSlider.value = String(DEFAULT_BRIGHTNESS);
-  toneSlider.value = String(DEFAULT_TONE);
+  toneSelection = DEFAULT_TONE;
   updateBeforeAfterUI();
-  updateSliderLabels();
+  updateToneUI();
   scheduleRender();
 });
 
@@ -391,6 +444,22 @@ if (sheetToggle) {
     setSheetState(!sheetExpanded);
   });
 }
+
+toneButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    if (button.disabled) return;
+    if (showOriginal) {
+      showOriginal = false;
+      updateBeforeAfterUI();
+      brightnessSlider.value = String(adjustedBrightness);
+    }
+    toneSelection = Number(button.dataset.tone);
+    adjustedTone = toneSelection;
+    updateToneUI();
+    if (toneHint) toneHint.classList.add("is-hidden");
+    scheduleRender();
+  });
+});
 
 if (MOBILE_MEDIA.addEventListener) {
   MOBILE_MEDIA.addEventListener("change", initSheetState);
@@ -419,5 +488,5 @@ if (MOBILE_MEDIA.addEventListener) {
 
 setControlsEnabled(false);
 updateBeforeAfterUI();
-updateSliderLabels();
+updateToneUI();
 initSheetState();

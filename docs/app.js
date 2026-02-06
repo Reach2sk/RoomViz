@@ -9,11 +9,13 @@ const viewAdjustedBtn = document.getElementById("viewAdjusted");
 const viewOriginalBtn = document.getElementById("viewOriginal");
 const brightnessValue = document.getElementById("brightnessValue");
 const toneValue = document.getElementById("toneValue");
+const scrollHint = document.getElementById("scrollHint");
 const emptyState = document.getElementById("emptyState");
 const canvas = document.getElementById("roomCanvas");
 const canvasWrap = document.getElementById("canvasWrap");
 const stage = document.getElementById("stage");
 const loadingOverlay = document.getElementById("loadingOverlay");
+const controlsPanel = document.getElementById("controlsPanel");
 
 const brightnessControl = document.getElementById("brightnessControl");
 const toneControl = document.getElementById("toneControl");
@@ -52,6 +54,9 @@ function setControlsEnabled(enabled) {
   brightnessControl.dataset.disabled = enabled ? "false" : "true";
   toneControl.dataset.disabled = enabled ? "false" : "true";
   actionRow.dataset.disabled = enabled ? "false" : "true";
+  if (!enabled) {
+    setScrollHint(false);
+  }
 }
 
 function updateBeforeAfterUI() {
@@ -88,6 +93,19 @@ function updateSliderLabels() {
 function setLoading(visible) {
   if (!loadingOverlay) return;
   loadingOverlay.classList.toggle("is-visible", visible);
+}
+
+function setScrollHint(visible) {
+  if (!scrollHint) return;
+  scrollHint.classList.toggle("is-visible", visible);
+}
+
+function maybeHideScrollHint() {
+  if (!scrollHint || !controlsPanel) return;
+  const rect = controlsPanel.getBoundingClientRect();
+  if (rect.top < window.innerHeight - 40) {
+    setScrollHint(false);
+  }
 }
 
 function scheduleRender() {
@@ -179,6 +197,7 @@ function applyImageSource(imageSource) {
   setControlsEnabled(true);
   resetControls();
   setLoading(false);
+  setScrollHint(true);
 }
 
 async function loadImage(file) {
@@ -299,6 +318,7 @@ function handleSliderInput() {
     showOriginal = false;
     updateBeforeAfterUI();
   }
+  setScrollHint(false);
   adjustedBrightness = Number(brightnessSlider.value);
   adjustedTone = Number(toneSlider.value);
   updateSliderLabels();
@@ -331,6 +351,17 @@ viewOriginalBtn.addEventListener("click", () => {
   updateSliderLabels();
   scheduleRender();
 });
+
+window.addEventListener("scroll", maybeHideScrollHint, { passive: true });
+
+if (scrollHint) {
+  scrollHint.addEventListener("click", () => {
+    if (controlsPanel) {
+      controlsPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+    setScrollHint(false);
+  });
+}
 
 [stage, canvasWrap].forEach((element) => {
   element.addEventListener("dragover", (event) => {

@@ -33,6 +33,9 @@
               </div>
             </div>
           </div>
+          <button id="scrollHint" class="scroll-hint" type="button">
+            Adjust lighting below
+          </button>
           <div class="loading-overlay" id="loadingOverlay" aria-live="polite">
             <div class="spinner" aria-hidden="true"></div>
             <span>Processing photo…</span>
@@ -52,7 +55,7 @@
           <input type="file" id="fileInput" accept="image/*" capture="environment" hidden />
         </section>
 
-        <aside class="controls" aria-label="Lighting controls">
+        <aside class="controls" id="controlsPanel" aria-label="Lighting controls">
           <div class="card">
             <div class="card-header">
               <h2>Lighting controls</h2>

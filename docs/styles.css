@@ -108,6 +108,28 @@ canvas {
   background: #f1f1f4;
 }
 
+.scroll-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  display: none;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+  z-index: 3;
+}
+
+.scroll-hint.is-visible {
+  display: none;
+}
+
 .loading-overlay {
   position: absolute;
   inset: 16px;
@@ -410,7 +432,7 @@ canvas {
 
 @media (max-width: 640px) {
   .page {
-    padding: 22px 16px 30px;
+    padding: 20px 16px 28px;
   }
 
   .control input[type="range"]::-webkit-slider-thumb {
@@ -426,6 +448,7 @@ canvas {
   .hero {
     flex-direction: column;
     align-items: flex-start;
+    margin-bottom: 18px;
   }
 
   .stage-overlay {
@@ -435,4 +458,17 @@ canvas {
     align-items: flex-start;
     gap: 6px;
   }
+
+  .stage {
+    min-height: 52vh;
+  }
+
+  .canvas-wrap {
+    min-height: 44vh;
+  }
+
+  .scroll-hint.is-visible {
+    display: inline-flex;
+  }
+
 }

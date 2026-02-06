@@ -418,6 +418,7 @@ canvas {
   border-radius: 999px;
   background: #e5e5ea;
   outline: none;
+  touch-action: pan-y;
 }
 
 .control input[type="range"]::-webkit-slider-thumb {
@@ -517,6 +518,13 @@ canvas {
   text-align: center;
 }
 
+.version-label {
+  margin: 4px 0 0;
+  font-size: 10px;
+  color: #c0c0c4;
+  letter-spacing: 0.04em;
+}
+
 [data-disabled="true"] {
   opacity: 0.5;
   pointer-events: none;
@@ -536,6 +544,11 @@ canvas {
 
 #tone::-moz-range-track {
   background: linear-gradient(90deg, #e08b61 0%, #ececec 50%, #84b6d6 100%);
+}
+
+/* ===== Mobile overlay controls (hidden on desktop) ===== */
+.mobile-controls {
+  display: none;
 }
 
 @keyframes rise {
@@ -571,22 +584,13 @@ canvas {
 
 @media (max-width: 640px), (pointer: coarse) {
   .page {
-    padding: 8px 8px calc(100px + env(safe-area-inset-bottom));
+    padding: 8px 8px 16px;
+    overflow-x: hidden;
   }
 
   .main {
-    padding-bottom: 100px;
+    padding-bottom: 0;
     gap: 0;
-  }
-
-  .control input[type="range"]::-webkit-slider-thumb {
-    width: 26px;
-    height: 26px;
-  }
-
-  .control input[type="range"]::-moz-range-thumb {
-    width: 26px;
-    height: 26px;
   }
 
   .hero {
@@ -597,100 +601,169 @@ canvas {
   }
 
   .stage {
-    padding: 4px;
-    min-height: auto;
-    border-radius: 12px;
-  }
-
-  .has-photo .stage {
     padding: 0;
+    min-height: auto;
     border-radius: 10px;
-  }
-
-  .has-photo .canvas-wrap {
-    border: none;
-    border-radius: 10px;
+    overflow: hidden;
   }
 
   .canvas-wrap {
     min-height: auto;
-    border-radius: 8px;
+    border: none;
+    border-radius: 10px;
     flex-direction: column;
     align-items: stretch;
   }
 
   canvas {
     max-height: none;
-    border-radius: 6px 6px 0 0;
+    border-radius: 10px 10px 0 0;
     flex-shrink: 0;
   }
 
+  /* Stage overlay — frosted pill at top of image on mobile */
   .stage-overlay {
-    position: relative;
-    top: auto;
-    bottom: auto;
-    left: auto;
+    position: absolute;
+    top: 8px;
+    left: 50%;
     right: auto;
+    bottom: auto;
+    transform: translateX(-50%);
     flex-direction: row;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     justify-content: center;
     align-items: center;
     gap: 8px;
-    border-radius: 0 0 8px 8px;
-    border: none;
-    border-top: 1px solid var(--border);
-    padding: 8px 10px;
-    background: rgba(255, 255, 255, 0.96);
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    padding: 5px 6px;
+    background: rgba(255, 255, 255, 0.82);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
     margin: 0;
-    width: 100%;
+    width: auto;
     box-sizing: border-box;
+    z-index: 5;
   }
 
   .stage-overlay .ghost-small {
-    padding: 5px 8px;
+    padding: 4px 8px;
+    font-size: 10px;
+  }
+
+  .segmented-btn {
+    padding: 4px 10px;
     font-size: 11px;
   }
 
+  /* ===== Hide the old desktop sidebar/bottom-sheet controls on mobile ===== */
   .controls {
-    position: fixed;
+    display: none !important;
+  }
+
+  /* ===== Mobile overlay controls — frosted glass over bottom of image ===== */
+  .mobile-controls {
+    display: block;
+    position: absolute;
     left: 0;
     right: 0;
     bottom: 0;
-    z-index: 6;
-    padding: 0 16px calc(12px + env(safe-area-inset-bottom));
-  }
-
-  .controls .card {
-    border-radius: 20px 20px 0 0;
-    padding: 10px 14px 12px;
-    box-shadow: 0 -16px 40px rgba(0, 0, 0, 0.16);
-    animation: rise 0.5s ease both;
-  }
-
-  .sheet-toggle {
-    display: block;
-  }
-
-  .controls.is-collapsed .sheet-body {
-    max-height: 0;
-    opacity: 0;
+    z-index: 4;
     pointer-events: none;
+    padding: 0;
   }
 
-  .controls.is-expanded .sheet-body {
-    max-height: 55vh;
-    opacity: 1;
+  .mobile-controls-inner {
     pointer-events: auto;
-    overflow: auto;
-    -webkit-overflow-scrolling: touch;
+    background: rgba(255, 255, 255, 0.78);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border-top: 1px solid rgba(255, 255, 255, 0.5);
+    padding: 10px 16px 14px;
+    overflow: hidden;
+    touch-action: pan-y;
   }
 
-  .controls.is-collapsed .sheet-label {
-    color: var(--ink);
+  .mc-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 4px;
   }
 
-  .controls.is-collapsed .card {
-    padding-bottom: 10px;
+  .mc-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(0, 0, 0, 0.75);
+  }
+
+  .mc-value {
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(0, 0, 0, 0.45);
+  }
+
+  .mc-slider {
+    width: 100%;
+    appearance: none;
+    -webkit-appearance: none;
+    height: 6px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #b8b8bd 0%, #f0f0f3 100%);
+    outline: none;
+    margin: 0 0 10px;
+    touch-action: pan-y;
+  }
+
+  .mc-slider:last-child,
+  .mc-slider:last-of-type {
+    margin-bottom: 0;
+  }
+
+  .mc-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+    cursor: pointer;
+  }
+
+  .mc-slider::-moz-range-thumb {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+    cursor: pointer;
+  }
+
+  .mc-slider::-moz-range-track {
+    height: 6px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #b8b8bd 0%, #f0f0f3 100%);
+  }
+
+  .mc-slider-tone {
+    background: linear-gradient(90deg, #e08b61 0%, #ececec 50%, #84b6d6 100%) !important;
+  }
+
+  .mc-slider-tone::-moz-range-track {
+    background: linear-gradient(90deg, #e08b61 0%, #ececec 50%, #84b6d6 100%);
+  }
+
+  .control input[type="range"]::-webkit-slider-thumb {
+    width: 26px;
+    height: 26px;
+  }
+
+  .control input[type="range"]::-moz-range-thumb {
+    width: 26px;
+    height: 26px;
   }
 
   .scroll-hint.is-visible {
@@ -737,4 +810,7 @@ canvas {
     padding-top: 6px;
   }
 
+  .footer {
+    margin-top: 10px;
+  }
 }

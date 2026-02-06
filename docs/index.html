@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Room Lighting Visualizer</title>
-    <link rel="stylesheet" href="styles.css?v=20260206-8" />
+    <link rel="stylesheet" href="styles.css?v=20260206-9" />
   </head>
   <body>
     <div class="page">
@@ -28,6 +28,40 @@
                 </button>
               </div>
               <button id="replaceBtn" class="ghost ghost-small" disabled>Change photo</button>
+            </div>
+
+            <!-- Mobile overlay controls (inside canvas-wrap, over the image) -->
+            <div class="mobile-controls" id="mobileControls">
+              <div class="mobile-controls-inner">
+                <div class="mc-row">
+                  <span class="mc-label">Brightness</span>
+                  <span class="mc-value" id="mcBrightnessValue">Medium</span>
+                </div>
+                <input
+                  type="range"
+                  id="mcBrightness"
+                  class="mc-slider"
+                  min="0"
+                  max="100"
+                  value="70"
+                  step="1"
+                  disabled
+                />
+                <div class="mc-row">
+                  <span class="mc-label">Warmth</span>
+                  <span class="mc-value" id="mcToneValue">Neutral</span>
+                </div>
+                <input
+                  type="range"
+                  id="mcTone"
+                  class="mc-slider mc-slider-tone"
+                  min="-100"
+                  max="100"
+                  value="0"
+                  step="1"
+                  disabled
+                />
+              </div>
             </div>
           </div>
           <div id="sampleBanner" class="sample-banner" style="display:none">
@@ -126,9 +160,10 @@
 
       <footer class="footer">
         <p>Tip: dim first, then add warmth for nighttime comfort.</p>
+        <p class="version-label">v1.2</p>
       </footer>
     </div>
 
-    <script src="app.js?v=20260206-8"></script>
+    <script src="app.js?v=20260206-9"></script>
   </body>
 </html>

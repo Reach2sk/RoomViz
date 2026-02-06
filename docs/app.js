@@ -1,3 +1,5 @@
+const APP_VERSION = "1.2";
+
 const fileInput = document.getElementById("fileInput");
 const uploadBtn = document.getElementById("uploadBtn");
 const sampleBtn = document.getElementById("sampleBtn");
@@ -17,6 +19,12 @@ const stage = document.getElementById("stage");
 const loadingOverlay = document.getElementById("loadingOverlay");
 const controlsPanel = document.getElementById("controlsPanel");
 const sheetToggle = document.getElementById("sheetToggle");
+
+// Mobile overlay controls
+const mcBrightness = document.getElementById("mcBrightness");
+const mcTone = document.getElementById("mcTone");
+const mcBrightnessValue = document.getElementById("mcBrightnessValue");
+const mcToneValue = document.getElementById("mcToneValue");
 
 const MOBILE_MEDIA = window.matchMedia("(max-width: 640px), (pointer: coarse)");
 let sheetExpanded = false;
@@ -57,11 +65,16 @@ function setControlsEnabled(enabled) {
   viewOriginalBtn.disabled = !enabled;
   if (sheetToggle) sheetToggle.disabled = !enabled;
 
+  // Mobile controls
+  if (mcBrightness) mcBrightness.disabled = !enabled;
+  if (mcTone) mcTone.disabled = !enabled;
+
   brightnessControl.dataset.disabled = enabled ? "false" : "true";
   toneControl.dataset.disabled = enabled ? "false" : "true";
   if (!enabled) {
     setScrollHint(false);
     toneSlider.value = String(DEFAULT_TONE);
+    if (mcTone) mcTone.value = String(DEFAULT_TONE);
     updateSliderLabels();
   }
 }
@@ -95,6 +108,21 @@ function updateSliderLabels() {
 
   brightnessValue.textContent = brightnessLabel;
   toneValue.textContent = toneLabel;
+
+  // Sync mobile overlay labels
+  if (mcBrightnessValue) mcBrightnessValue.textContent = brightnessLabel;
+  if (mcToneValue) mcToneValue.textContent = toneLabel;
+}
+
+/** Keep both slider sets in sync */
+function syncSliders(source) {
+  if (source === "desktop") {
+    if (mcBrightness) mcBrightness.value = brightnessSlider.value;
+    if (mcTone) mcTone.value = toneSlider.value;
+  } else {
+    brightnessSlider.value = mcBrightness ? mcBrightness.value : brightnessSlider.value;
+    toneSlider.value = mcTone ? mcTone.value : toneSlider.value;
+  }
 }
 
 function showAhaToast() {
@@ -213,6 +241,8 @@ function resetControls() {
   adjustedTone = DEFAULT_TONE;
   brightnessSlider.value = String(DEFAULT_BRIGHTNESS);
   toneSlider.value = String(DEFAULT_TONE);
+  if (mcBrightness) mcBrightness.value = String(DEFAULT_BRIGHTNESS);
+  if (mcTone) mcTone.value = String(DEFAULT_TONE);
   showOriginal = false;
   updateBeforeAfterUI();
   updateSliderLabels();
@@ -336,13 +366,18 @@ fileInput.addEventListener("change", (event) => {
   fileInput.value = "";
 });
 
-function handleSliderInput() {
+// === Shared slider handler logic ===
+
+function handleBrightnessChange(source) {
   if (showOriginal) {
     showOriginal = false;
     updateBeforeAfterUI();
   }
   setScrollHint(false);
   hideSampleBanner();
+
+  syncSliders(source);
+
   const brightness = Number(brightnessSlider.value);
   adjustedBrightness = brightness;
   if (!hasShownAha && brightness <= 40) {
@@ -353,26 +388,39 @@ function handleSliderInput() {
   scheduleRender();
 }
 
-brightnessSlider.addEventListener("input", handleSliderInput);
-
-function handleToneInput() {
+function handleToneChange(source) {
   if (showOriginal) {
     showOriginal = false;
     updateBeforeAfterUI();
     brightnessSlider.value = String(adjustedBrightness);
+    if (mcBrightness) mcBrightness.value = String(adjustedBrightness);
   }
   hideSampleBanner();
+
+  syncSliders(source);
+
   adjustedTone = Number(toneSlider.value);
   updateSliderLabels();
   scheduleRender();
 }
 
-toneSlider.addEventListener("input", handleToneInput);
+// Desktop slider listeners
+brightnessSlider.addEventListener("input", () => handleBrightnessChange("desktop"));
+toneSlider.addEventListener("input", () => handleToneChange("desktop"));
+
+// Mobile overlay slider listeners
+if (mcBrightness) {
+  mcBrightness.addEventListener("input", () => handleBrightnessChange("mobile"));
+}
+if (mcTone) {
+  mcTone.addEventListener("input", () => handleToneChange("mobile"));
+}
 
 viewAdjustedBtn.addEventListener("click", () => {
   showOriginal = false;
   brightnessSlider.value = String(adjustedBrightness);
   toneSlider.value = String(adjustedTone);
+  syncSliders("desktop");
   updateBeforeAfterUI();
   updateSliderLabels();
   scheduleRender();
@@ -386,6 +434,7 @@ viewOriginalBtn.addEventListener("click", () => {
   showOriginal = true;
   brightnessSlider.value = String(DEFAULT_BRIGHTNESS);
   toneSlider.value = String(DEFAULT_TONE);
+  syncSliders("desktop");
   updateBeforeAfterUI();
   updateSliderLabels();
   scheduleRender();
@@ -440,3 +489,5 @@ initSheetState();
 
 // Auto-load sample photo on startup
 loadSampleImage();
+
+console.log("Room Viz " + APP_VERSION);

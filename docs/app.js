@@ -26,6 +26,7 @@ const settingsModal = document.getElementById("settingsModal");
 const settingsBackdrop = document.getElementById("settingsBackdrop");
 const settingsClose = document.getElementById("settingsClose");
 const algoBadge = document.getElementById("algoBadge");
+const algoActive = document.getElementById("algoActive");
 const algoRadios = Array.from(document.querySelectorAll('input[name="algoVersion"]'));
 
 // Mobile overlay controls
@@ -66,6 +67,7 @@ const MAX_HEIGHT = 800;
 const ALGO_KEY = "roomviz_algo_version";
 const DEFAULT_ALGO = "v1";
 let currentAlgo = DEFAULT_ALGO;
+let lastRenderedAlgo = null;
 
 function lerp(min, max, t) {
   return min + (max - min) * t;
@@ -271,6 +273,7 @@ function scheduleRender() {
 }
 
 function applyLightingV1(src, out, brightness, toneSelectionValue) {
+  lastRenderedAlgo = "v1";
   const exposure = lerp(0.35, 1.12, brightness);
   const contrast = lerp(1.12, 0.98, brightness);
   const gamma = lerp(1.25, 1.0, brightness);
@@ -316,6 +319,7 @@ function applyLightingV1(src, out, brightness, toneSelectionValue) {
 }
 
 function applyLightingV2(src, out, brightness, toneSelectionValue, variant = "v2") {
+  lastRenderedAlgo = variant === "v3" ? "v3" : "v2";
   const baseExposure = lerp(0.28, 1.1, brightness);
   const baseContrast = lerp(1.12, 0.98, brightness);
   const shadowBoost = lerp(0.5, 0.0, brightness);
@@ -397,6 +401,13 @@ function render() {
     applyLightingV3(src, out, brightness, tone);
   } else {
     applyLightingV1(src, out, brightness, tone);
+  }
+
+  if (algoActive && lastRenderedAlgo) {
+    const label = ALGO_LABELS[lastRenderedAlgo] ?? lastRenderedAlgo;
+    if (algoActive.textContent !== label) {
+      algoActive.textContent = label;
+    }
   }
 
   ctx.putImageData(outputImageData, 0, 0);
@@ -575,14 +586,13 @@ function handleToneChange(source) {
   if (showOriginal) {
     showOriginal = false;
     updateBeforeAfterUI();
-    brightnessSlider.value = String(adjustedBrightness);
-    if (mcBrightness) mcBrightness.value = String(adjustedBrightness);
   }
   hideSampleBanner();
   scheduleAutoCollapse();
   scheduleMobileCollapse();
 
   syncSliders(source);
+  adjustedBrightness = Number(brightnessSlider.value);
   adjustedTone = Number(toneSlider.value);
   updateSliderLabels();
   if (toneHint) toneHint.classList.add("is-hidden");

@@ -56,7 +56,6 @@ const DEFAULT_BRIGHTNESS = 70;
 const DEFAULT_TONE = 0;
 let adjustedBrightness = DEFAULT_BRIGHTNESS;
 let adjustedTone = DEFAULT_TONE;
-let toneUnlocked = false;
 let isSamplePhoto = false;
 let rafPending = false;
 let hasShownAha = false;
@@ -83,7 +82,7 @@ function smoothstep(edge0, edge1, x) {
 
 function setControlsEnabled(enabled) {
   brightnessSlider.disabled = !enabled;
-  toneSlider.disabled = !enabled || !toneUnlocked;
+  toneSlider.disabled = !enabled;
   replaceBtn.disabled = !enabled;
   viewAdjustedBtn.disabled = !enabled;
   viewOriginalBtn.disabled = !enabled;
@@ -92,14 +91,13 @@ function setControlsEnabled(enabled) {
 
   // Mobile controls
   if (mcBrightness) mcBrightness.disabled = !enabled;
-  if (mcTone) mcTone.disabled = !enabled || !toneUnlocked;
+  if (mcTone) mcTone.disabled = !enabled;
   if (mcToggle) mcToggle.disabled = !enabled;
 
   brightnessControl.dataset.disabled = enabled ? "false" : "true";
-  toneControl.dataset.disabled = enabled && toneUnlocked ? "false" : "true";
+  toneControl.dataset.disabled = enabled ? "false" : "true";
   if (!enabled) {
     setScrollHint(false);
-    toneUnlocked = false;
     toneSlider.value = String(DEFAULT_TONE);
     if (mcTone) mcTone.value = String(DEFAULT_TONE);
     updateSliderLabels();
@@ -164,16 +162,6 @@ function showAhaToast() {
   ahaTimer = window.setTimeout(() => {
     ahaToast.classList.remove("is-visible");
   }, 2000);
-}
-
-function unlockTone() {
-  if (toneUnlocked) return;
-  toneUnlocked = true;
-  toneControl.dataset.disabled = "false";
-  toneSlider.disabled = false;
-  if (mcTone) mcTone.disabled = false;
-  if (toneHint) toneHint.classList.remove("is-hidden");
-  if (brightnessHint) brightnessHint.classList.add("is-hidden");
 }
 
 const ALGO_LABELS = {
@@ -402,7 +390,7 @@ function render() {
   const src = originalImageData.data;
   const out = outputImageData.data;
 
-  const algo = getAlgoVersion();
+  const algo = currentAlgo;
   if (algo === "v2") {
     applyLightingV2(src, out, brightness, tone);
   } else if (algo === "v3") {
@@ -428,7 +416,6 @@ function resetControls() {
   toneSlider.value = String(DEFAULT_TONE);
   if (mcBrightness) mcBrightness.value = String(DEFAULT_BRIGHTNESS);
   if (mcTone) mcTone.value = String(DEFAULT_TONE);
-  toneUnlocked = false;
   showOriginal = false;
   updateBeforeAfterUI();
   updateSliderLabels();
@@ -453,7 +440,6 @@ function applyImageSource(imageSource) {
   emptyState.style.display = "none";
   document.body.classList.add("has-photo");
   hasShownAha = false;
-  toneUnlocked = false;
   setControlsEnabled(true);
   resetControls();
   setLoading(false);
@@ -577,9 +563,6 @@ function handleBrightnessChange(source) {
 
   const brightness = Number(brightnessSlider.value);
   adjustedBrightness = brightness;
-  if (!toneUnlocked) {
-    unlockTone();
-  }
   if (!hasShownAha && brightness <= 40) {
     hasShownAha = true;
     showAhaToast();

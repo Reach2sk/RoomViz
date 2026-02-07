@@ -28,6 +28,14 @@ body {
   max-width: 1160px;
   margin: 0 auto;
   padding: 36px 24px 40px;
+  position: relative;
+}
+
+.settings-btn {
+  position: absolute;
+  top: 20px;
+  right: 24px;
+  z-index: 6;
 }
 
 .hero {
@@ -253,6 +261,18 @@ canvas {
   font-size: 11px;
 }
 
+.algo-badge {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  font-size: 10px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  letter-spacing: 0.04em;
+}
+
 .desktop-only {
   display: flex;
 }
@@ -475,6 +495,36 @@ canvas {
   justify-content: space-between;
 }
 
+.tone-segmented {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.tone-btn {
+  border: 1px solid var(--border);
+  background: #f5f5f7;
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.tone-btn.is-active {
+  background: var(--surface);
+  color: var(--ink);
+  border-color: #c7c7cc;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.tone-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 
 .control-row {
   display: flex;
@@ -519,19 +569,7 @@ canvas {
   margin: 0;
 }
 
-.footer {
-  margin-top: 20px;
-  font-size: 12px;
-  color: var(--muted);
-  text-align: center;
-}
-
-.version-label {
-  margin: 4px 0 0;
-  font-size: 10px;
-  color: #c0c0c4;
-  letter-spacing: 0.04em;
-}
+/* Footer removed */
 
 [data-disabled="true"] {
   opacity: 0.5;
@@ -546,12 +584,85 @@ canvas {
   background: linear-gradient(90deg, #b8b8bd 0%, #f0f0f3 100%);
 }
 
-#tone {
-  background: linear-gradient(90deg, #e08b61 0%, #ececec 50%, #84b6d6 100%);
+/* tone slider removed */
+
+.settings-modal {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
 }
 
-#tone::-moz-range-track {
-  background: linear-gradient(90deg, #e08b61 0%, #ececec 50%, #84b6d6 100%);
+.settings-modal.is-open {
+  display: flex;
+}
+
+.settings-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(2px);
+}
+
+.settings-panel {
+  position: relative;
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  width: min(520px, 92vw);
+  padding: 18px 18px 12px;
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.2);
+  z-index: 1;
+}
+
+.settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.settings-label {
+  font-size: 12px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  margin: 0 0 4px;
+}
+
+.settings-option {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  align-items: start;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #fafafa;
+  cursor: pointer;
+}
+
+.settings-option input {
+  margin-top: 4px;
+}
+
+.settings-option strong {
+  display: block;
+  font-size: 13px;
+}
+
+.settings-option p {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--muted);
 }
 
 /* ===== Mobile overlay controls (hidden on desktop) ===== */
@@ -594,6 +705,15 @@ canvas {
   .page {
     padding: 8px 8px 16px;
     overflow-x: hidden;
+  }
+
+  .settings-btn {
+    top: 10px;
+    right: 10px;
+  }
+
+  .algo-badge {
+    display: none;
   }
 
   .main {
@@ -678,7 +798,7 @@ canvas {
     bottom: 0;
     z-index: 4;
     padding: 0 12px 10px;
-    pointer-events: none;
+    pointer-events: auto;
   }
 
   .mc-toggle {
@@ -811,12 +931,16 @@ canvas {
     background: linear-gradient(90deg, #b8b8bd 0%, #f0f0f3 100%);
   }
 
-  .mc-slider-tone {
-    background: linear-gradient(90deg, #e08b61 0%, #ececec 50%, #84b6d6 100%) !important;
+  .mc-tone {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    margin-top: 6px;
   }
 
-  .mc-slider-tone::-moz-range-track {
-    background: linear-gradient(90deg, #e08b61 0%, #ececec 50%, #84b6d6 100%);
+  .mc-tone-btn {
+    padding: 6px 8px;
+    font-size: 11px;
   }
 
   .control input[type="range"]::-webkit-slider-thumb {

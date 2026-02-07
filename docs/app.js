@@ -1,16 +1,17 @@
-const APP_VERSION = "1.3";
+const APP_VERSION = "1.4";
 
 const fileInput = document.getElementById("fileInput");
 const uploadBtn = document.getElementById("uploadBtn");
 const sampleBtn = document.getElementById("sampleBtn");
 const replaceBtn = document.getElementById("replaceBtn");
 const brightnessSlider = document.getElementById("brightness");
-const toneSlider = document.getElementById("tone");
 const viewAdjustedBtn = document.getElementById("viewAdjusted");
 const viewOriginalBtn = document.getElementById("viewOriginal");
 const viewToggleBtn = document.getElementById("viewToggleBtn");
 const brightnessValue = document.getElementById("brightnessValue");
 const toneValue = document.getElementById("toneValue");
+const brightnessHint = document.getElementById("brightnessHint");
+const toneHint = document.getElementById("toneHint");
 const ahaToast = document.getElementById("ahaToast");
 const scrollHint = document.getElementById("scrollHint");
 const emptyState = document.getElementById("emptyState");
@@ -20,12 +21,17 @@ const stage = document.getElementById("stage");
 const loadingOverlay = document.getElementById("loadingOverlay");
 const controlsPanel = document.getElementById("controlsPanel");
 const sheetToggle = document.getElementById("sheetToggle");
+const settingsBtn = document.getElementById("settingsBtn");
+const settingsModal = document.getElementById("settingsModal");
+const settingsBackdrop = document.getElementById("settingsBackdrop");
+const settingsClose = document.getElementById("settingsClose");
+const algoBadge = document.getElementById("algoBadge");
+const algoRadios = Array.from(document.querySelectorAll('input[name="algoVersion"]'));
 
 // Mobile overlay controls
 const mobileControls = document.getElementById("mobileControls");
 const mcToggle = document.getElementById("mcToggle");
 const mcBrightness = document.getElementById("mcBrightness");
-const mcTone = document.getElementById("mcTone");
 const mcBrightnessValue = document.getElementById("mcBrightnessValue");
 const mcToneValue = document.getElementById("mcToneValue");
 
@@ -39,6 +45,7 @@ const MC_AUTO_MS = 2600;
 
 const brightnessControl = document.getElementById("brightnessControl");
 const toneControl = document.getElementById("toneControl");
+const toneButtons = Array.from(document.querySelectorAll(".tone-btn"));
 
 const ctx = canvas.getContext("2d", { willReadFrequently: true });
 
@@ -49,6 +56,8 @@ const DEFAULT_BRIGHTNESS = 70;
 const DEFAULT_TONE = 0;
 let adjustedBrightness = DEFAULT_BRIGHTNESS;
 let adjustedTone = DEFAULT_TONE;
+let toneSelection = DEFAULT_TONE;
+let toneUnlocked = false;
 let isSamplePhoto = false;
 let rafPending = false;
 let hasShownAha = false;
@@ -56,6 +65,9 @@ let ahaTimer = null;
 
 const MAX_WIDTH = 1200;
 const MAX_HEIGHT = 800;
+const ALGO_KEY = "roomviz_algo_version";
+const DEFAULT_ALGO = "v1";
+let currentAlgo = localStorage.getItem(ALGO_KEY) || DEFAULT_ALGO;
 
 function lerp(min, max, t) {
   return min + (max - min) * t;
@@ -65,9 +77,13 @@ function clamp(value, min = 0, max = 1) {
   return Math.min(Math.max(value, min), max);
 }
 
+function smoothstep(edge0, edge1, x) {
+  const t = clamp((x - edge0) / (edge1 - edge0));
+  return t * t * (3 - 2 * t);
+}
+
 function setControlsEnabled(enabled) {
   brightnessSlider.disabled = !enabled;
-  toneSlider.disabled = !enabled;
   replaceBtn.disabled = !enabled;
   viewAdjustedBtn.disabled = !enabled;
   viewOriginalBtn.disabled = !enabled;
@@ -76,16 +92,20 @@ function setControlsEnabled(enabled) {
 
   // Mobile controls
   if (mcBrightness) mcBrightness.disabled = !enabled;
-  if (mcTone) mcTone.disabled = !enabled;
   if (mcToggle) mcToggle.disabled = !enabled;
 
   brightnessControl.dataset.disabled = enabled ? "false" : "true";
-  toneControl.dataset.disabled = enabled ? "false" : "true";
+  toneControl.dataset.disabled = enabled && toneUnlocked ? "false" : "true";
+  toneButtons.forEach((button) => {
+    button.disabled = !enabled || !toneUnlocked;
+  });
   if (!enabled) {
     setScrollHint(false);
-    toneSlider.value = String(DEFAULT_TONE);
-    if (mcTone) mcTone.value = String(DEFAULT_TONE);
-    updateSliderLabels();
+    toneSelection = DEFAULT_TONE;
+    toneUnlocked = false;
+    updateToneUI();
+    if (toneHint) toneHint.classList.add("is-hidden");
+    if (brightnessHint) brightnessHint.classList.remove("is-hidden");
     setMobileControls(false);
   }
 }
@@ -108,16 +128,13 @@ function updateBeforeAfterUI() {
 
 function updateSliderLabels() {
   const brightness = Number(brightnessSlider.value);
-  let brightnessLabel = "Medium";
-  if (brightness <= 20) brightnessLabel = "Very Dim";
-  else if (brightness <= 45) brightnessLabel = "Dim";
-  else if (brightness <= 75) brightnessLabel = "Medium";
-  else brightnessLabel = "Bright";
+  let brightnessLabel = "Bright";
+  if (brightness < 40) brightnessLabel = "Soft / Cozy";
+  else if (brightness < 70) brightnessLabel = "Balanced";
 
-  const tone = Number(toneSlider.value);
   let toneLabel = "Neutral";
-  if (tone < -35) toneLabel = "Warm";
-  if (tone > 35) toneLabel = "Cool";
+  if (toneSelection < 0) toneLabel = "Warm";
+  if (toneSelection > 0) toneLabel = "Cool";
 
   brightnessValue.textContent = brightnessLabel;
   toneValue.textContent = toneLabel;
@@ -127,14 +144,22 @@ function updateSliderLabels() {
   if (mcToneValue) mcToneValue.textContent = toneLabel;
 }
 
-/** Keep both slider sets in sync */
-function syncSliders(source) {
+function updateToneUI() {
+  toneButtons.forEach((button) => {
+    const value = Number(button.dataset.tone);
+    const isActive = value === toneSelection;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-pressed", isActive ? "true" : "false");
+  });
+  updateSliderLabels();
+}
+
+/** Keep brightness sliders in sync */
+function syncBrightness(source) {
   if (source === "desktop") {
     if (mcBrightness) mcBrightness.value = brightnessSlider.value;
-    if (mcTone) mcTone.value = toneSlider.value;
   } else {
     brightnessSlider.value = mcBrightness ? mcBrightness.value : brightnessSlider.value;
-    toneSlider.value = mcTone ? mcTone.value : toneSlider.value;
   }
 }
 
@@ -145,6 +170,42 @@ function showAhaToast() {
   ahaTimer = window.setTimeout(() => {
     ahaToast.classList.remove("is-visible");
   }, 2000);
+}
+
+function unlockTone() {
+  if (toneUnlocked) return;
+  toneUnlocked = true;
+  toneControl.dataset.disabled = "false";
+  toneButtons.forEach((button) => {
+    button.disabled = false;
+  });
+  if (toneHint) toneHint.classList.remove("is-hidden");
+  if (brightnessHint) brightnessHint.classList.add("is-hidden");
+}
+
+const ALGO_LABELS = {
+  v1: "v1.0",
+  v2: "v2.0",
+  v3: "v3.0",
+};
+
+function getAlgoVersion() {
+  return currentAlgo;
+}
+
+function setAlgoVersion(version, persist = true) {
+  const next = ALGO_LABELS[version] ? version : DEFAULT_ALGO;
+  currentAlgo = next;
+  if (persist) {
+    localStorage.setItem(ALGO_KEY, next);
+  }
+  if (algoBadge) {
+    algoBadge.textContent = `Algo ${ALGO_LABELS[next]}`;
+  }
+  algoRadios.forEach((radio) => {
+    radio.checked = radio.value === next;
+  });
+  scheduleRender();
 }
 
 
@@ -228,36 +289,24 @@ function scheduleRender() {
   });
 }
 
-function render() {
-  if (!originalImageData) return;
-
-  if (showOriginal) {
-    ctx.putImageData(originalImageData, 0, 0);
-    return;
-  }
-
-  const brightness = Number(brightnessSlider.value) / 100;
-  const tone = Number(toneSlider.value) / 100;
-
-  const exposure = lerp(0.3, 1.15, brightness);
-  const contrast = lerp(1.15, 0.95, brightness);
+function applyLightingV1(src, out, brightness, toneSelectionValue) {
+  const exposure = lerp(0.35, 1.12, brightness);
+  const contrast = lerp(1.12, 0.98, brightness);
   const gamma = lerp(1.25, 1.0, brightness);
 
-  const rMul = 1 - 0.08 * tone;
+  const tone = toneSelectionValue * 0.7;
+  const rMul = 1 - 0.07 * tone;
   const gMul = 1 - 0.02 * tone;
-  const bMul = 1 + 0.1 * tone;
-
-  const src = originalImageData.data;
-  const out = outputImageData.data;
+  const bMul = 1 + 0.09 * tone;
 
   for (let i = 0; i < src.length; i += 4) {
-    let r = src[i] / 255;
-    let g = src[i + 1] / 255;
-    let b = src[i + 2] / 255;
+    const or = src[i] / 255;
+    const og = src[i + 1] / 255;
+    const ob = src[i + 2] / 255;
 
-    r *= rMul;
-    g *= gMul;
-    b *= bMul;
+    let r = or * rMul;
+    let g = og * gMul;
+    let b = ob * bMul;
 
     r *= exposure;
     g *= exposure;
@@ -271,10 +320,102 @@ function render() {
     g = Math.pow(Math.max(g, 0), gamma);
     b = Math.pow(Math.max(b, 0), gamma);
 
+    const luma = 0.2126 * or + 0.7152 * og + 0.0722 * ob;
+    const protect = smoothstep(0.75, 0.95, luma);
+
+    r = r * (1 - protect) + or * protect;
+    g = g * (1 - protect) + og * protect;
+    b = b * (1 - protect) + ob * protect;
+
     out[i] = Math.round(clamp(r) * 255);
     out[i + 1] = Math.round(clamp(g) * 255);
     out[i + 2] = Math.round(clamp(b) * 255);
     out[i + 3] = src[i + 3];
+  }
+}
+
+function applyLightingV2(src, out, brightness, toneSelectionValue, variant = "v2") {
+  const baseExposure = lerp(0.28, 1.1, brightness);
+  const baseContrast = lerp(1.12, 0.98, brightness);
+  const shadowBoost = lerp(0.5, 0.0, brightness);
+  const gamma = lerp(1.32, 1.0, brightness);
+
+  const tone = toneSelectionValue;
+
+  for (let i = 0; i < src.length; i += 4) {
+    const or = src[i] / 255;
+    const og = src[i + 1] / 255;
+    const ob = src[i + 2] / 255;
+
+    const luma = 0.2126 * or + 0.7152 * og + 0.0722 * ob;
+    const daylight = smoothstep(0.62, 0.92, luma);
+    const interior = 1 - daylight;
+    const region = lerp(0.45, 1.0, interior);
+
+    const exposure = 1 + (baseExposure - 1) * region;
+    const contrast = 1 + (baseContrast - 1) * region;
+
+    const shadow = Math.pow(1 - luma, 1.4);
+    const shadowFactor = 1 - shadowBoost * shadow * region;
+
+    let r = or * exposure * shadowFactor;
+    let g = og * exposure * shadowFactor;
+    let b = ob * exposure * shadowFactor;
+
+    r = (r - 0.5) * contrast + 0.5;
+    g = (g - 0.5) * contrast + 0.5;
+    b = (b - 0.5) * contrast + 0.5;
+
+    r = Math.pow(Math.max(r, 0), gamma);
+    g = Math.pow(Math.max(g, 0), gamma);
+    b = Math.pow(Math.max(b, 0), gamma);
+
+    const toneStrength = (variant === "v3" ? 0.22 : 0.16) * region;
+    const rMul = 1 - 0.12 * tone * toneStrength;
+    const gMul = 1 - 0.04 * tone * toneStrength;
+    const bMul = 1 + 0.18 * tone * toneStrength;
+
+    r *= rMul;
+    g *= gMul;
+    b *= bMul;
+
+    const protect = smoothstep(0.7, 0.95, luma);
+    r = r * (1 - protect) + or * protect;
+    g = g * (1 - protect) + og * protect;
+    b = b * (1 - protect) + ob * protect;
+
+    out[i] = Math.round(clamp(r) * 255);
+    out[i + 1] = Math.round(clamp(g) * 255);
+    out[i + 2] = Math.round(clamp(b) * 255);
+    out[i + 3] = src[i + 3];
+  }
+}
+
+function applyLightingV3(src, out, brightness, toneSelectionValue) {
+  applyLightingV2(src, out, brightness, toneSelectionValue, "v3");
+}
+
+function render() {
+  if (!originalImageData) return;
+
+  if (showOriginal) {
+    ctx.putImageData(originalImageData, 0, 0);
+    return;
+  }
+
+  const brightness = Number(brightnessSlider.value) / 100;
+  const tone = toneSelection;
+
+  const src = originalImageData.data;
+  const out = outputImageData.data;
+
+  const algo = getAlgoVersion();
+  if (algo === "v2") {
+    applyLightingV2(src, out, brightness, tone);
+  } else if (algo === "v3") {
+    applyLightingV3(src, out, brightness, tone);
+  } else {
+    applyLightingV1(src, out, brightness, tone);
   }
 
   ctx.putImageData(outputImageData, 0, 0);
@@ -291,12 +432,14 @@ function resetControls() {
   adjustedBrightness = DEFAULT_BRIGHTNESS;
   adjustedTone = DEFAULT_TONE;
   brightnessSlider.value = String(DEFAULT_BRIGHTNESS);
-  toneSlider.value = String(DEFAULT_TONE);
   if (mcBrightness) mcBrightness.value = String(DEFAULT_BRIGHTNESS);
-  if (mcTone) mcTone.value = String(DEFAULT_TONE);
+  toneSelection = DEFAULT_TONE;
+  toneUnlocked = false;
   showOriginal = false;
   updateBeforeAfterUI();
-  updateSliderLabels();
+  updateToneUI();
+  if (toneHint) toneHint.classList.add("is-hidden");
+  if (brightnessHint) brightnessHint.classList.remove("is-hidden");
   scheduleRender();
 }
 
@@ -316,6 +459,7 @@ function applyImageSource(imageSource) {
   emptyState.style.display = "none";
   document.body.classList.add("has-photo");
   hasShownAha = false;
+  toneUnlocked = false;
   setControlsEnabled(true);
   resetControls();
   setLoading(false);
@@ -435,10 +579,13 @@ function handleBrightnessChange(source) {
   scheduleAutoCollapse();
   scheduleMobileCollapse();
 
-  syncSliders(source);
+  syncBrightness(source);
 
   const brightness = Number(brightnessSlider.value);
   adjustedBrightness = brightness;
+  if (!toneUnlocked) {
+    unlockTone();
+  }
   if (!hasShownAha && brightness <= 40) {
     hasShownAha = true;
     showAhaToast();
@@ -458,46 +605,50 @@ function handleToneChange(source) {
   scheduleAutoCollapse();
   scheduleMobileCollapse();
 
-  syncSliders(source);
-
-  adjustedTone = Number(toneSlider.value);
-  updateSliderLabels();
+  const selected = Number(source);
+  if (Number.isNaN(selected)) return;
+  toneSelection = selected;
+  adjustedTone = toneSelection;
+  updateToneUI();
+  if (toneHint) toneHint.classList.add("is-hidden");
   scheduleRender();
 }
 
 // Desktop slider listeners
 brightnessSlider.addEventListener("input", () => handleBrightnessChange("desktop"));
-toneSlider.addEventListener("input", () => handleToneChange("desktop"));
 
 // Mobile overlay slider listeners
 if (mcBrightness) {
   mcBrightness.addEventListener("input", () => handleBrightnessChange("mobile"));
 }
-if (mcTone) {
-  mcTone.addEventListener("input", () => handleToneChange("mobile"));
-}
+toneButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    if (button.disabled) return;
+    handleToneChange(button.dataset.tone);
+  });
+});
 
 viewAdjustedBtn.addEventListener("click", () => {
   showOriginal = false;
   brightnessSlider.value = String(adjustedBrightness);
-  toneSlider.value = String(adjustedTone);
-  syncSliders("desktop");
+  syncBrightness("desktop");
+  toneSelection = adjustedTone;
+  updateToneUI();
   updateBeforeAfterUI();
-  updateSliderLabels();
   scheduleRender();
 });
 
 viewOriginalBtn.addEventListener("click", () => {
   if (!showOriginal) {
     adjustedBrightness = Number(brightnessSlider.value);
-    adjustedTone = Number(toneSlider.value);
+    adjustedTone = toneSelection;
   }
   showOriginal = true;
   brightnessSlider.value = String(DEFAULT_BRIGHTNESS);
-  toneSlider.value = String(DEFAULT_TONE);
-  syncSliders("desktop");
+  toneSelection = DEFAULT_TONE;
+  syncBrightness("desktop");
+  updateToneUI();
   updateBeforeAfterUI();
-  updateSliderLabels();
   scheduleRender();
 });
 
@@ -510,6 +661,30 @@ if (viewToggleBtn) {
     }
   });
 }
+
+if (settingsBtn && settingsModal) {
+  const openSettings = () => {
+    settingsModal.classList.add("is-open");
+    settingsModal.setAttribute("aria-hidden", "false");
+  };
+  const closeSettings = () => {
+    settingsModal.classList.remove("is-open");
+    settingsModal.setAttribute("aria-hidden", "true");
+  };
+
+  settingsBtn.addEventListener("click", openSettings);
+  if (settingsBackdrop) settingsBackdrop.addEventListener("click", closeSettings);
+  if (settingsClose) settingsClose.addEventListener("click", closeSettings);
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closeSettings();
+  });
+}
+
+algoRadios.forEach((radio) => {
+  radio.addEventListener("change", () => {
+    if (radio.checked) setAlgoVersion(radio.value);
+  });
+});
 
 window.addEventListener("scroll", maybeHideScrollHint, { passive: true });
 
@@ -562,7 +737,8 @@ if (MOBILE_MEDIA.addEventListener) {
 });
 
 updateBeforeAfterUI();
-updateSliderLabels();
+updateToneUI();
+setAlgoVersion(getAlgoVersion(), false);
 initSheetState();
 setMobileControls(false);
 

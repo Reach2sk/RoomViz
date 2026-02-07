@@ -267,6 +267,9 @@ canvas {
   border-radius: 999px;
   letter-spacing: 0.04em;
   cursor: pointer;
+  z-index: 6;
+  pointer-events: auto;
+  user-select: none;
 }
 
 .desktop-only {
@@ -682,6 +685,11 @@ canvas {
   }
 
   /* Keep algo badge visible on mobile */
+  .algo-badge {
+    bottom: 72px;
+    font-size: 11px;
+    padding: 6px 10px;
+  }
 
   .main {
     padding-bottom: 0;

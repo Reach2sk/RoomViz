@@ -274,6 +274,12 @@ canvas {
   gap: 10px;
 }
 
+.photo-actions-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .photo-status {
   font-size: 11px;
   color: var(--muted);
@@ -283,6 +289,15 @@ canvas {
 
 .algo-badge {
   white-space: nowrap;
+}
+
+.ab-toggle {
+  padding: 2px;
+}
+
+.ab-toggle .segmented-btn {
+  padding: 4px 10px;
+  font-size: 11px;
 }
 
 .algo-badge:disabled {

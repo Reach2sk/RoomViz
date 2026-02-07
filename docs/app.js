@@ -24,6 +24,9 @@ const controlsPanel = document.getElementById("controlsPanel");
 const sheetToggle = document.getElementById("sheetToggle");
 const photoActions = document.getElementById("photoActions");
 const photoStatus = document.getElementById("photoStatus");
+const abToggle = document.getElementById("abToggle");
+const abA = document.getElementById("abA");
+const abB = document.getElementById("abB");
 const settingsModal = document.getElementById("settingsModal");
 const settingsBackdrop = document.getElementById("settingsBackdrop");
 const settingsClose = document.getElementById("settingsClose");
@@ -175,7 +178,7 @@ function showAhaToast() {
 
 const ALGO_LABELS = {
   v1: "v1",
-  v5: "v5",
+  v5: "v1.1",
 };
 
 function getAlgoVersion() {
@@ -203,6 +206,13 @@ function setAlgoVersion(version, persist = true) {
   }
   if (algoActive) {
     algoActive.textContent = ALGO_LABELS[next];
+  }
+  if (abA && abB) {
+    const isA = next === "v1";
+    abA.classList.toggle("is-active", isA);
+    abB.classList.toggle("is-active", !isA);
+    abA.setAttribute("aria-pressed", String(isA));
+    abB.setAttribute("aria-pressed", String(!isA));
   }
   algoRadios.forEach((radio) => {
     radio.checked = radio.value === next;
@@ -747,6 +757,13 @@ algoRadios.forEach((radio) => {
     if (radio.checked) setAlgoVersion(radio.value);
   });
 });
+
+if (abA) {
+  abA.addEventListener("click", () => setAlgoVersion("v1"));
+}
+if (abB) {
+  abB.addEventListener("click", () => setAlgoVersion("v5"));
+}
 
 window.addEventListener("scroll", maybeHideScrollHint, { passive: true });
 

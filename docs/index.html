@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Room Lighting Visualizer</title>
-    <link rel="stylesheet" href="styles.css?v=20260207-16" />
+    <link rel="stylesheet" href="styles.css?v=20260207-17" />
   </head>
   <body>
     <div class="page">
@@ -74,15 +74,21 @@
               <span id="photoStatus" class="photo-status" aria-hidden="true">Sample photo</span>
               <button id="replaceBtn" class="ghost ghost-small" disabled>Change photo</button>
             </div>
-            <button
-              id="algoBadge"
-              class="ghost ghost-small algo-badge"
-              type="button"
-              aria-haspopup="dialog"
-              aria-label="Open settings"
-            >
-              Algo v1.0
-            </button>
+            <div class="photo-actions-right">
+              <div id="abToggle" class="segmented ab-toggle" role="group" aria-label="A/B lighting models">
+                <button id="abA" class="segmented-btn is-active" type="button">A</button>
+                <button id="abB" class="segmented-btn" type="button">B</button>
+              </div>
+              <button
+                id="algoBadge"
+                class="ghost ghost-small algo-badge"
+                type="button"
+                aria-haspopup="dialog"
+                aria-label="Open settings"
+              >
+                Algo v1
+              </button>
+            </div>
           </div>
           <p class="disclaimer mobile-only mobile-disclaimer">
             Visual guide only. Real rooms vary by fixture, finish, and daylight.
@@ -201,7 +207,7 @@
           <label class="settings-option">
             <input type="radio" name="algoVersion" value="v5" />
             <div>
-              <strong>Lighting model v5</strong>
+              <strong>Lighting model v1.1</strong>
               <p>Midtone‑biased warmth enhancement for clearer Warm/Neutral/Cool shifts.</p>
             </div>
           </label>
@@ -209,6 +215,6 @@
       </div>
     </div>
 
-    <script src="app.js?v=20260207-16"></script>
+    <script src="app.js?v=20260207-17"></script>
   </body>
 </html>

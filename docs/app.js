@@ -740,9 +740,8 @@ setMobileControls(false);
 // Auto-load sample photo on startup
 loadSampleImage();
 
-const mobileBuildVersion = document.getElementById("mobileBuildVersion");
-if (mobileBuildVersion) {
-  mobileBuildVersion.textContent = "Build " + APP_VERSION;
-}
+document.querySelectorAll(".build-version").forEach((el) => {
+  el.textContent = "Build " + APP_VERSION;
+});
 
 console.log("Room Viz " + APP_VERSION);

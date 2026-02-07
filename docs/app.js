@@ -1,8 +1,7 @@
-const APP_VERSION = "1.8";
+const APP_VERSION = "1.9";
 
 const fileInput = document.getElementById("fileInput");
 const uploadBtn = document.getElementById("uploadBtn");
-const sampleBtn = document.getElementById("sampleBtn");
 const replaceBtn = document.getElementById("replaceBtn");
 const brightnessSlider = document.getElementById("brightness");
 const toneSlider = document.getElementById("tone");
@@ -13,7 +12,6 @@ const brightnessValue = document.getElementById("brightnessValue");
 const toneValue = document.getElementById("toneValue");
 const brightnessHint = document.getElementById("brightnessHint");
 const toneHint = document.getElementById("toneHint");
-const ahaToast = document.getElementById("ahaToast");
 const scrollHint = document.getElementById("scrollHint");
 const emptyState = document.getElementById("emptyState");
 const canvas = document.getElementById("roomCanvas");
@@ -61,8 +59,6 @@ let adjustedBrightness = DEFAULT_BRIGHTNESS;
 let adjustedTone = DEFAULT_TONE;
 let isSamplePhoto = false;
 let rafPending = false;
-let hasShownAha = false;
-let ahaTimer = null;
 
 const MAX_WIDTH = 1200;
 const MAX_HEIGHT = 800;
@@ -251,14 +247,6 @@ function syncSliders(source) {
   }
 }
 
-function showAhaToast() {
-  if (!ahaToast) return;
-  ahaToast.classList.add("is-visible");
-  if (ahaTimer) window.clearTimeout(ahaTimer);
-  ahaTimer = window.setTimeout(() => {
-    ahaToast.classList.remove("is-visible");
-  }, 2000);
-}
 
 const ALGO_LABELS = {
   v1: "1.0",
@@ -711,7 +699,6 @@ function applyImageSource(imageSource) {
 
   emptyState.style.display = "none";
   document.body.classList.add("has-photo");
-  hasShownAha = false;
   setControlsEnabled(true);
   resetControls();
   daylightMask = computeDaylightMask(originalImageData.data, targetWidth, targetHeight);
@@ -768,24 +755,6 @@ function loadImageFromUrl(url) {
   });
 }
 
-const SAMPLE_LANDSCAPE = "sample.jpg";
-const SAMPLE_PORTRAIT = "sample-portrait.jpg";
-
-function getSampleUrl() {
-  return MOBILE_MEDIA.matches ? SAMPLE_PORTRAIT : SAMPLE_LANDSCAPE;
-}
-
-async function loadSampleImage() {
-  setLoading(true);
-  isSamplePhoto = true;
-  try {
-    const imageSource = await loadImageFromUrl(getSampleUrl());
-    applyImageSource(imageSource);
-  } catch (error) {
-    setLoading(false);
-    alert("Unable to load the sample image. Please try again.");
-  }
-}
 
 function handleFiles(files) {
   const file = files[0];
@@ -805,7 +774,6 @@ function handleFiles(files) {
 
 uploadBtn.addEventListener("click", () => fileInput.click());
 replaceBtn.addEventListener("click", () => fileInput.click());
-sampleBtn.addEventListener("click", () => loadSampleImage());
 
 const uploadOwnBtn = document.getElementById("uploadOwnBtn");
 if (uploadOwnBtn) {
@@ -833,10 +801,6 @@ function handleBrightnessChange(source) {
 
   const brightness = Number(brightnessSlider.value);
   adjustedBrightness = brightness;
-  if (!hasShownAha && brightness <= 40) {
-    hasShownAha = true;
-    showAhaToast();
-  }
   updateSliderLabels();
   scheduleRender();
 }
@@ -994,8 +958,6 @@ initAlgoVersion();
 initSheetState();
 setMobileControls(false);
 
-// Auto-load sample photo on startup
-loadSampleImage();
 
 document.querySelectorAll(".build-version").forEach((el) => {
   el.textContent = "Build " + APP_VERSION;

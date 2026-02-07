@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Room Lighting Visualizer</title>
-    <link rel="stylesheet" href="styles.css?v=20260207-22" />
+    <link rel="stylesheet" href="styles.css?v=20260207-23" />
   </head>
   <body>
     <div class="page">
@@ -29,11 +29,6 @@
                 </button>
               </div>
             </div>
-            <button id="editLightsToggle" class="edit-lights-toggle" type="button" aria-pressed="false">
-              Edit lights
-            </button>
-            <div id="lightPrompt" class="light-prompt">Tap to add/remove.</div>
-            <div id="lightOverlay" class="light-overlay" aria-hidden="true"></div>
 
             <!-- Mobile overlay controls (inside canvas-wrap, over the image) -->
             <div class="mobile-controls is-collapsed" id="mobileControls">
@@ -91,10 +86,10 @@
                 aria-haspopup="dialog"
                 aria-label="Open settings"
               >
-              Algo v1
-            </button>
+                Model 1.0
+              </button>
+            </div>
           </div>
-        </div>
           <p class="disclaimer mobile-only mobile-disclaimer">
             Visual guide only. Real rooms vary by fixture, finish, and daylight.
             <span class="build-version" id="mobileBuildVersion"></span>
@@ -224,16 +219,16 @@
             </div>
           </label>
           <label class="settings-option">
-            <input type="radio" name="algoVersion" value="v2x" />
+            <input type="radio" name="algoVersion" value="v20" />
             <div>
-              <strong>Lighting model 2.x — Source‑anchored warmth (experimental)</strong>
-              <p>Anchors warmth to detected light sources with spill and daylight protection.</p>
+              <strong>Lighting model 2.0 — Stronger global warmth (experimental)</strong>
+              <p>Applies a temperature‑based warmth shift globally with midtone focus.</p>
             </div>
           </label>
         </div>
       </div>
     </div>
 
-    <script src="app.js?v=20260207-22"></script>
+    <script src="app.js?v=20260207-23"></script>
   </body>
 </html>

@@ -32,9 +32,6 @@ const settingsBackdrop = document.getElementById("settingsBackdrop");
 const settingsClose = document.getElementById("settingsClose");
 const algoBadge = document.getElementById("algoBadge");
 const algoActive = document.getElementById("algoActive");
-const editLightsToggle = document.getElementById("editLightsToggle");
-const lightPrompt = document.getElementById("lightPrompt");
-const lightOverlay = document.getElementById("lightOverlay");
 const algoRadios = Array.from(document.querySelectorAll('input[name="algoVersion"]'));
 
 // Mobile overlay controls
@@ -76,12 +73,8 @@ const ALGO_KEY = "roomviz_algo_version";
 const DEFAULT_ALGO = "v1";
 let currentAlgo = DEFAULT_ALGO;
 let lastRenderedAlgo = null;
-let lightPoints = [];
-let editLights = false;
-let lightInfluence = null;
 let daylightMask = null;
 let midtoneMask = null;
-let activeDrag = null;
 
 function lerp(min, max, t) {
   return min + (max - min) * t;
@@ -131,7 +124,7 @@ function tempMultipliers(toneSelectionValue) {
   if (toneSelectionValue === 0) {
     return { r: 1, g: 1, b: 1 };
   }
-  const kelvin = clamp(6500 - toneSelectionValue * 3500, 2500, 9000);
+  const kelvin = clamp(6500 + toneSelectionValue * 3500, 2500, 9000);
   const wb = kelvinToRgb(kelvin);
   return {
     r: wb.r / NEUTRAL_WB.r,
@@ -178,188 +171,6 @@ function buildMidtoneMask(data, width, height) {
   return mask;
 }
 
-function detectLightSources(data, width, height) {
-  const step = Math.max(2, Math.floor(Math.min(width, height) / 120));
-  const w = Math.floor(width / step);
-  const h = Math.floor(height / step);
-  const luma = new Float32Array(w * h);
-  const sat = new Float32Array(w * h);
-
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      const srcX = x * step;
-      const srcY = y * step;
-      const idx = (srcY * width + srcX) * 4;
-      const r = data[idx] / 255;
-      const g = data[idx + 1] / 255;
-      const b = data[idx + 2] / 255;
-      const max = Math.max(r, g, b);
-      const min = Math.min(r, g, b);
-      const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-      luma[y * w + x] = lum;
-      sat[y * w + x] = max - min;
-    }
-  }
-
-  const daylight = new Uint8Array(w * h);
-  for (let i = 0; i < luma.length; i++) {
-    if (luma[i] > 0.86 && sat[i] < 0.12) {
-      daylight[i] = 1;
-    }
-  }
-
-  const daylightLarge = new Uint8Array(w * h);
-  const visited = new Uint8Array(w * h);
-  const minDaylightSize = Math.round(w * h * 0.02);
-  const dirs = [
-    [1, 0],
-    [-1, 0],
-    [0, 1],
-    [0, -1],
-  ];
-
-  for (let i = 0; i < daylight.length; i++) {
-    if (!daylight[i] || visited[i]) continue;
-    const stack = [i];
-    visited[i] = 1;
-    const cells = [];
-    while (stack.length) {
-      const idx = stack.pop();
-      cells.push(idx);
-      const cx = idx % w;
-      const cy = Math.floor(idx / w);
-      for (const [dx, dy] of dirs) {
-        const nx = cx + dx;
-        const ny = cy + dy;
-        if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue;
-        const ni = ny * w + nx;
-        if (visited[ni] || !daylight[ni]) continue;
-        visited[ni] = 1;
-        stack.push(ni);
-      }
-    }
-    if (cells.length >= minDaylightSize) {
-      for (const idx of cells) {
-        daylightLarge[idx] = 1;
-      }
-    }
-  }
-
-  const candidates = new Uint8Array(w * h);
-  for (let y = 1; y < h - 1; y++) {
-    for (let x = 1; x < w - 1; x++) {
-      const idx = y * w + x;
-      if (daylightLarge[idx]) continue;
-      const lum = luma[idx];
-      if (lum < 0.82) continue;
-      let sum = 0;
-      let count = 0;
-      for (let dy = -1; dy <= 1; dy++) {
-        for (let dx = -1; dx <= 1; dx++) {
-          if (dx === 0 && dy === 0) continue;
-          sum += luma[(y + dy) * w + (x + dx)];
-          count += 1;
-        }
-      }
-      const local = sum / count;
-      if (lum - local > 0.08) {
-        candidates[idx] = 1;
-      }
-    }
-  }
-
-  const visitedCand = new Uint8Array(w * h);
-  const sources = [];
-  const minSize = 3;
-  const maxSize = Math.round(w * h * 0.02);
-
-  for (let i = 0; i < candidates.length; i++) {
-    if (!candidates[i] || visitedCand[i]) continue;
-    const stack = [i];
-    visitedCand[i] = 1;
-    let count = 0;
-    let sumX = 0;
-    let sumY = 0;
-    let sumL = 0;
-    while (stack.length) {
-      const idx = stack.pop();
-      const cx = idx % w;
-      const cy = Math.floor(idx / w);
-      count += 1;
-      sumX += cx;
-      sumY += cy;
-      sumL += luma[idx];
-      for (const [dx, dy] of dirs) {
-        const nx = cx + dx;
-        const ny = cy + dy;
-        if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue;
-        const ni = ny * w + nx;
-        if (visitedCand[ni] || !candidates[ni]) continue;
-        visitedCand[ni] = 1;
-        stack.push(ni);
-      }
-    }
-    if (count < minSize || count > maxSize) continue;
-    const cx = sumX / count;
-    const cy = sumY / count;
-    const avgL = sumL / count;
-    const strength = clamp((avgL - 0.75) / 0.25, 0.3, 1);
-    const sizeNorm = Math.sqrt(count) / Math.max(w, h);
-    const baseRadius = clamp(sizeNorm * 1.6, 0.02, 0.06);
-    sources.push({
-      x: (cx * step) / width,
-      y: (cy * step) / height,
-      strength,
-      sourceRadius: baseRadius * 0.6,
-      spillRadius: baseRadius * 2.4,
-      detected: true,
-    });
-  }
-
-  sources.sort((a, b) => b.strength - a.strength);
-  return sources.slice(0, 8);
-}
-
-function rebuildLightInfluence(width, height) {
-  if (!lightPoints.length) {
-    lightInfluence = null;
-    return;
-  }
-
-  const influence = new Float32Array(width * height);
-  const core = new Float32Array(width * height);
-  for (let i = 0; i < influence.length; i++) influence[i] = 0;
-
-  for (const light of lightPoints) {
-    const lx = light.x * width;
-    const ly = light.y * height;
-    const sourceRadius = (light.sourceRadius || 0.03) * Math.min(width, height);
-    const spillRadius = (light.spillRadius || 0.08) * Math.min(width, height);
-    const strength = light.strength || 0.7;
-
-    const minX = Math.max(0, Math.floor(lx - spillRadius));
-    const maxX = Math.min(width - 1, Math.ceil(lx + spillRadius));
-    const minY = Math.max(0, Math.floor(ly - spillRadius));
-    const maxY = Math.min(height - 1, Math.ceil(ly + spillRadius));
-
-    for (let y = minY; y <= maxY; y++) {
-      for (let x = minX; x <= maxX; x++) {
-        const dx = x - lx;
-        const dy = y - ly;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist > spillRadius) continue;
-        const source = 1 - smoothstep(0, sourceRadius, dist);
-        const spill = 1 - smoothstep(sourceRadius, spillRadius, dist);
-        const weight = clamp(source * 0.85 + spill * 0.55, 0, 1) * strength;
-        const idx = y * width + x;
-        influence[idx] = clamp(influence[idx] + weight, 0, 1);
-        core[idx] = Math.max(core[idx], source * strength);
-      }
-    }
-  }
-
-  lightInfluence = { spill: influence, core };
-}
 
 function setControlsEnabled(enabled) {
   brightnessSlider.disabled = !enabled;
@@ -448,7 +259,7 @@ const ALGO_LABELS = {
   v1: "1.0",
   v11: "1.1",
   v12: "1.2",
-  v2x: "2.x",
+  v20: "2.0",
 };
 
 function getAlgoVersion() {
@@ -460,6 +271,10 @@ function initAlgoVersion() {
   const stored = localStorage.getItem(ALGO_KEY);
   if (stored === "v5") {
     setAlgoVersion("v11", true);
+    return;
+  }
+  if (stored === "v2x") {
+    setAlgoVersion("v20", true);
     return;
   }
   if (stored && ALGO_LABELS[stored]) {
@@ -492,7 +307,6 @@ function setAlgoVersion(version, persist = true) {
   algoRadios.forEach((radio) => {
     radio.checked = radio.value === next;
   });
-  updateLightOverlay();
   scheduleRender();
 }
 
@@ -726,8 +540,6 @@ function applyLightingV2X(src, out, brightness, toneSelectionValue, width, heigh
   const contrast = lerp(1.12, 0.98, brightness);
   const gamma = lerp(1.25, 1.0, brightness);
 
-  const baseTone = toneSelectionValue * 0.7;
-  const ambient = lightPoints.length ? 0.22 : 0.08;
   const tempMul = tempMultipliers(toneSelectionValue);
 
   for (let i = 0; i < src.length; i += 4) {
@@ -739,14 +551,7 @@ function applyLightingV2X(src, out, brightness, toneSelectionValue, width, heigh
     const luma = 0.2126 * or + 0.7152 * og + 0.0722 * ob;
     const mid = midtoneMask ? midtoneMask[index] : midtoneWeight(luma);
     const daylight = daylightMask ? daylightMask[index] : 0;
-    const spill = lightInfluence ? lightInfluence.spill[index] : 0;
-    const core = lightInfluence ? lightInfluence.core[index] : 0;
-
-    const spillStrength = clamp(ambient + (1 - ambient) * spill, 0, 1);
-    const coreStrength = clamp(core * 1.35, 0, 1.2);
-    const baseMask = mid * spillStrength * (1 - daylight * 0.85);
-    const coreMask = coreStrength * (1 - daylight * 0.4);
-    const toneStrength = clamp(baseMask + coreMask * 0.85, 0, 1.6);
+    const toneStrength = clamp(0.4 + 0.9 * mid, 0, 1.2) * (1 - daylight * 0.75);
 
     let r = or * (1 + (tempMul.r - 1) * toneStrength);
     let g = og * (1 + (tempMul.g - 1) * toneStrength);
@@ -765,10 +570,9 @@ function applyLightingV2X(src, out, brightness, toneSelectionValue, width, heigh
     b = Math.pow(Math.max(b, 0), gamma);
 
     const protect = smoothstep(0.75, 0.95, luma);
-    const protectFactor = clamp(protect * (1 - coreMask * 0.35), 0, 1);
-    r = r * (1 - protectFactor) + or * protectFactor;
-    g = g * (1 - protectFactor) + og * protectFactor;
-    b = b * (1 - protectFactor) + ob * protectFactor;
+    r = r * (1 - protect) + or * protect;
+    g = g * (1 - protect) + og * protect;
+    b = b * (1 - protect) + ob * protect;
 
     out[i] = Math.round(clamp(r) * 255);
     out[i + 1] = Math.round(clamp(g) * 255);
@@ -855,7 +659,7 @@ function render() {
 
   const algo = currentAlgo;
   lastRenderedAlgo = algo;
-  if (algo === "v2x") {
+  if (algo === "v20") {
     applyLightingV2X(src, out, brightness, tone, canvas.width, canvas.height);
   } else if (algo === "v12") {
     applyLightingV12(src, out, brightness, tone);
@@ -894,34 +698,6 @@ function updatePhotoActions() {
   }
 }
 
-function updateLightOverlay() {
-  if (!lightOverlay || !editLightsToggle) return;
-  const show = originalImageData && currentAlgo === "v2x";
-  lightOverlay.style.display = show ? "block" : "none";
-  editLightsToggle.style.display = show ? "inline-flex" : "none";
-  editLightsToggle.classList.toggle("is-active", editLights);
-  editLightsToggle.setAttribute("aria-pressed", String(editLights));
-  lightOverlay.classList.toggle("is-editing", editLights);
-  if (lightPrompt) {
-    lightPrompt.style.display = show && editLights ? "block" : "none";
-  }
-
-  if (!show) {
-    if (lightPrompt) lightPrompt.style.display = "none";
-    return;
-  }
-
-  lightOverlay.innerHTML = "";
-  lightPoints.forEach((light, index) => {
-    const dot = document.createElement("div");
-    dot.className = `light-dot${light.detected ? " is-detected" : ""}`;
-    dot.dataset.index = String(index);
-    dot.style.left = `${light.x * 100}%`;
-    dot.style.top = `${light.y * 100}%`;
-    lightOverlay.appendChild(dot);
-  });
-}
-
 function resetControls() {
   adjustedBrightness = DEFAULT_BRIGHTNESS;
   adjustedTone = DEFAULT_TONE;
@@ -954,12 +730,8 @@ function applyImageSource(imageSource) {
   hasShownAha = false;
   setControlsEnabled(true);
   resetControls();
-  editLights = false;
-  lightPoints = [];
   daylightMask = computeDaylightMask(originalImageData.data, targetWidth, targetHeight);
   midtoneMask = buildMidtoneMask(originalImageData.data, targetWidth, targetHeight);
-  rebuildLightInfluence(targetWidth, targetHeight);
-  updateLightOverlay();
   setLoading(false);
   setScrollHint(true);
   initSheetState();
@@ -1186,89 +958,6 @@ if (abA) {
 }
 if (abB) {
   abB.addEventListener("click", () => setAlgoVersion("v12"));
-}
-
-if (editLightsToggle) {
-  editLightsToggle.addEventListener("click", () => {
-    editLights = !editLights;
-    updateLightOverlay();
-  });
-}
-
-if (lightOverlay) {
-  lightOverlay.addEventListener("pointerdown", (event) => {
-    if (!editLights) return;
-    const target = event.target;
-    const rect = lightOverlay.getBoundingClientRect();
-    const x = (event.clientX - rect.left) / rect.width;
-    const y = (event.clientY - rect.top) / rect.height;
-
-    let index = -1;
-    let wasNew = false;
-    if (target instanceof HTMLElement && target.classList.contains("light-dot")) {
-      index = Number(target.dataset.index);
-    } else {
-      lightPoints.push({
-        x: clamp(x, 0.02, 0.98),
-        y: clamp(y, 0.02, 0.98),
-        strength: 0.8,
-        sourceRadius: 0.035,
-        spillRadius: 0.11,
-        detected: false,
-      });
-      index = lightPoints.length - 1;
-      wasNew = true;
-      rebuildLightInfluence(canvas.width, canvas.height);
-      updateLightOverlay();
-      scheduleRender();
-    }
-
-    activeDrag = {
-      index,
-      startX: x,
-      startY: y,
-      moved: false,
-      wasNew,
-      targetWasDot: target.classList?.contains("light-dot"),
-    };
-    lightOverlay.setPointerCapture(event.pointerId);
-  });
-
-  lightOverlay.addEventListener("pointermove", (event) => {
-    if (!activeDrag || !editLights) return;
-    const rect = lightOverlay.getBoundingClientRect();
-    const x = (event.clientX - rect.left) / rect.width;
-    const y = (event.clientY - rect.top) / rect.height;
-    const dx = x - activeDrag.startX;
-    const dy = y - activeDrag.startY;
-    if (Math.hypot(dx, dy) > 0.01) {
-      activeDrag.moved = true;
-    }
-    const point = lightPoints[activeDrag.index];
-    if (point) {
-      point.x = clamp(x, 0.02, 0.98);
-      point.y = clamp(y, 0.02, 0.98);
-      updateLightOverlay();
-    }
-  });
-
-  const finishDrag = (event) => {
-    if (!activeDrag) return;
-    const { index, moved, wasNew, targetWasDot } = activeDrag;
-    if (targetWasDot && !moved && !wasNew) {
-      lightPoints.splice(index, 1);
-    }
-    activeDrag = null;
-    rebuildLightInfluence(canvas.width, canvas.height);
-    updateLightOverlay();
-    scheduleRender();
-    if (lightOverlay.hasPointerCapture(event.pointerId)) {
-      lightOverlay.releasePointerCapture(event.pointerId);
-    }
-  };
-
-  lightOverlay.addEventListener("pointerup", finishDrag);
-  lightOverlay.addEventListener("pointercancel", finishDrag);
 }
 
 window.addEventListener("scroll", maybeHideScrollHint, { passive: true });

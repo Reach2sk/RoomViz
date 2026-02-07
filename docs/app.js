@@ -84,6 +84,12 @@ function smoothstep(edge0, edge1, x) {
   return t * t * (3 - 2 * t);
 }
 
+function midtoneWeight(luma) {
+  const rise = smoothstep(0.2, 0.55, luma);
+  const fall = 1 - smoothstep(0.65, 0.92, luma);
+  return clamp(rise * fall, 0, 1);
+}
+
 function setControlsEnabled(enabled) {
   brightnessSlider.disabled = !enabled;
   toneSlider.disabled = !enabled;
@@ -168,9 +174,8 @@ function showAhaToast() {
 }
 
 const ALGO_LABELS = {
-  v1: "v1.0",
-  v2: "v2.0",
-  v3: "v3.0",
+  v1: "v1",
+  v5: "v5",
 };
 
 function getAlgoVersion() {
@@ -179,7 +184,12 @@ function getAlgoVersion() {
 }
 
 function initAlgoVersion() {
-  setAlgoVersion(DEFAULT_ALGO, true);
+  const stored = localStorage.getItem(ALGO_KEY);
+  if (stored && ALGO_LABELS[stored]) {
+    setAlgoVersion(stored, false);
+  } else {
+    setAlgoVersion(DEFAULT_ALGO, true);
+  }
 }
 
 function setAlgoVersion(version, persist = true) {
@@ -282,7 +292,6 @@ function scheduleRender() {
 }
 
 function applyLightingV1(src, out, brightness, toneSelectionValue) {
-  lastRenderedAlgo = "v1";
   const exposure = lerp(0.35, 1.12, brightness);
   const contrast = lerp(1.12, 0.98, brightness);
   const gamma = lerp(1.25, 1.0, brightness);
@@ -316,6 +325,53 @@ function applyLightingV1(src, out, brightness, toneSelectionValue) {
     const luma = 0.2126 * or + 0.7152 * og + 0.0722 * ob;
     const protect = smoothstep(0.75, 0.95, luma);
 
+    r = r * (1 - protect) + or * protect;
+    g = g * (1 - protect) + og * protect;
+    b = b * (1 - protect) + ob * protect;
+
+    out[i] = Math.round(clamp(r) * 255);
+    out[i + 1] = Math.round(clamp(g) * 255);
+    out[i + 2] = Math.round(clamp(b) * 255);
+    out[i + 3] = src[i + 3];
+  }
+}
+
+function applyLightingV5(src, out, brightness, toneSelectionValue) {
+  const exposure = lerp(0.35, 1.12, brightness);
+  const contrast = lerp(1.12, 0.98, brightness);
+  const gamma = lerp(1.25, 1.0, brightness);
+
+  const baseTone = toneSelectionValue * 0.7;
+
+  for (let i = 0; i < src.length; i += 4) {
+    const or = src[i] / 255;
+    const og = src[i + 1] / 255;
+    const ob = src[i + 2] / 255;
+
+    const luma = 0.2126 * or + 0.7152 * og + 0.0722 * ob;
+    const tone = baseTone * midtoneWeight(luma);
+
+    const rMul = 1 - 0.07 * tone;
+    const gMul = 1 - 0.02 * tone;
+    const bMul = 1 + 0.09 * tone;
+
+    let r = or * rMul;
+    let g = og * gMul;
+    let b = ob * bMul;
+
+    r *= exposure;
+    g *= exposure;
+    b *= exposure;
+
+    r = (r - 0.5) * contrast + 0.5;
+    g = (g - 0.5) * contrast + 0.5;
+    b = (b - 0.5) * contrast + 0.5;
+
+    r = Math.pow(Math.max(r, 0), gamma);
+    g = Math.pow(Math.max(g, 0), gamma);
+    b = Math.pow(Math.max(b, 0), gamma);
+
+    const protect = smoothstep(0.75, 0.95, luma);
     r = r * (1 - protect) + or * protect;
     g = g * (1 - protect) + og * protect;
     b = b * (1 - protect) + ob * protect;
@@ -404,10 +460,9 @@ function render() {
   const out = outputImageData.data;
 
   const algo = currentAlgo;
-  if (algo === "v2") {
-    applyLightingV2(src, out, brightness, tone);
-  } else if (algo === "v3") {
-    applyLightingV3(src, out, brightness, tone);
+  lastRenderedAlgo = algo;
+  if (algo === "v5") {
+    applyLightingV5(src, out, brightness, tone);
   } else {
     applyLightingV1(src, out, brightness, tone);
   }

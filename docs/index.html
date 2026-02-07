@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Room Lighting Visualizer</title>
-    <link rel="stylesheet" href="styles.css?v=20260207-15" />
+    <link rel="stylesheet" href="styles.css?v=20260207-16" />
   </head>
   <body>
     <div class="page">
@@ -190,32 +190,25 @@
         </div>
         <div class="settings-section">
           <p class="settings-label">Algorithm version</p>
-          <p class="settings-meta">Active renderer: <span id="algoActive">v1.0</span></p>
+          <p class="settings-meta">Active renderer: <span id="algoActive">v1</span></p>
           <label class="settings-option">
             <input type="radio" name="algoVersion" value="v1" />
             <div>
-              <strong>v1.0 — Global tone curve</strong>
-              <p>Fast global adjustment with highlight protection and gentle contrast.</p>
+              <strong>Lighting model v1</strong>
+              <p>Reference baseline with natural, trusted tone response.</p>
             </div>
           </label>
           <label class="settings-option">
-            <input type="radio" name="algoVersion" value="v2" />
+            <input type="radio" name="algoVersion" value="v5" />
             <div>
-              <strong>v2.0 — Daylight-aware relighting</strong>
-              <p>Separates bright daylight from interior lighting to avoid warm windows.</p>
-            </div>
-          </label>
-          <label class="settings-option">
-            <input type="radio" name="algoVersion" value="v3" />
-            <div>
-              <strong>v3.0 — Enhanced mood contrast</strong>
-              <p>Stronger interior warmth and slightly deeper shadows for a bolder mood shift.</p>
+              <strong>Lighting model v5</strong>
+              <p>Midtone‑biased warmth enhancement for clearer Warm/Neutral/Cool shifts.</p>
             </div>
           </label>
         </div>
       </div>
     </div>
 
-    <script src="app.js?v=20260207-15"></script>
+    <script src="app.js?v=20260207-16"></script>
   </body>
 </html>

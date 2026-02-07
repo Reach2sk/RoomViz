@@ -291,14 +291,6 @@ canvas {
   white-space: nowrap;
 }
 
-.ab-toggle {
-  padding: 2px;
-}
-
-.ab-toggle .segmented-btn {
-  padding: 4px 10px;
-  font-size: 11px;
-}
 
 .algo-badge:disabled {
   opacity: 0.6;

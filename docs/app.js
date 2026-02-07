@@ -1,4 +1,4 @@
-const APP_VERSION = "1.7";
+const APP_VERSION = "1.8";
 
 const fileInput = document.getElementById("fileInput");
 const uploadBtn = document.getElementById("uploadBtn");
@@ -24,9 +24,6 @@ const controlsPanel = document.getElementById("controlsPanel");
 const sheetToggle = document.getElementById("sheetToggle");
 const photoActions = document.getElementById("photoActions");
 const photoStatus = document.getElementById("photoStatus");
-const abToggle = document.getElementById("abToggle");
-const abA = document.getElementById("abA");
-const abB = document.getElementById("abB");
 const settingsModal = document.getElementById("settingsModal");
 const settingsBackdrop = document.getElementById("settingsBackdrop");
 const settingsClose = document.getElementById("settingsClose");
@@ -70,7 +67,7 @@ let ahaTimer = null;
 const MAX_WIDTH = 1200;
 const MAX_HEIGHT = 800;
 const ALGO_KEY = "roomviz_algo_version";
-const DEFAULT_ALGO = "v1";
+const DEFAULT_ALGO = "v20";
 let currentAlgo = DEFAULT_ALGO;
 let lastRenderedAlgo = null;
 let daylightMask = null;
@@ -265,8 +262,6 @@ function showAhaToast() {
 
 const ALGO_LABELS = {
   v1: "1.0",
-  v11: "1.1",
-  v12: "1.2",
   v20: "2.0",
 };
 
@@ -277,19 +272,11 @@ function getAlgoVersion() {
 
 function initAlgoVersion() {
   const stored = localStorage.getItem(ALGO_KEY);
-  if (stored === "v5") {
-    setAlgoVersion("v11", true);
-    return;
-  }
-  if (stored === "v2x") {
-    setAlgoVersion("v20", true);
-    return;
-  }
   if (stored && ALGO_LABELS[stored]) {
     setAlgoVersion(stored, false);
-  } else {
-    setAlgoVersion(DEFAULT_ALGO, true);
+    return;
   }
+  setAlgoVersion(DEFAULT_ALGO, true);
 }
 
 function setAlgoVersion(version, persist = true) {
@@ -303,14 +290,6 @@ function setAlgoVersion(version, persist = true) {
   }
   if (algoActive) {
     algoActive.textContent = `Model ${ALGO_LABELS[next]}`;
-  }
-  if (abA && abB) {
-    const isA = next === "v1";
-    const isB = next === "v12";
-    abA.classList.toggle("is-active", isA);
-    abB.classList.toggle("is-active", isB);
-    abA.setAttribute("aria-pressed", String(isA));
-    abB.setAttribute("aria-pressed", String(isB));
   }
   algoRadios.forEach((radio) => {
     radio.checked = radio.value === next;
@@ -670,10 +649,6 @@ function render() {
   lastRenderedAlgo = algo;
   if (algo === "v20") {
     applyLightingV2X(src, out, brightness, tone, canvas.width, canvas.height);
-  } else if (algo === "v12") {
-    applyLightingV12(src, out, brightness, tone);
-  } else if (algo === "v11") {
-    applyLightingV11(src, out, brightness, tone);
   } else {
     applyLightingV1(src, out, brightness, tone);
   }
@@ -962,12 +937,6 @@ algoRadios.forEach((radio) => {
   });
 });
 
-if (abA) {
-  abA.addEventListener("click", () => setAlgoVersion("v1"));
-}
-if (abB) {
-  abB.addEventListener("click", () => setAlgoVersion("v12"));
-}
 
 window.addEventListener("scroll", maybeHideScrollHint, { passive: true });
 

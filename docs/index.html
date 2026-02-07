@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Room Lighting Visualizer</title>
-    <link rel="stylesheet" href="styles.css?v=20260207-26" />
+    <link rel="stylesheet" href="styles.css?v=20260207-27" />
   </head>
   <body>
     <div class="page">
@@ -75,10 +75,6 @@
               <button id="replaceBtn" class="ghost ghost-small" disabled>Change photo</button>
             </div>
             <div class="photo-actions-right">
-              <div id="abToggle" class="segmented ab-toggle" role="group" aria-label="A/B lighting models">
-                <button id="abA" class="segmented-btn is-active" type="button">A</button>
-                <button id="abB" class="segmented-btn" type="button">B</button>
-              </div>
               <button
                 id="algoBadge"
                 class="ghost ghost-small algo-badge"
@@ -205,20 +201,6 @@
             </div>
           </label>
           <label class="settings-option">
-            <input type="radio" name="algoVersion" value="v11" />
-            <div>
-              <strong>Lighting model 1.1</strong>
-              <p>Midtone‑biased warmth enhancement for clearer Warm/Neutral/Cool shifts.</p>
-            </div>
-          </label>
-          <label class="settings-option">
-            <input type="radio" name="algoVersion" value="v12" />
-            <div>
-              <strong>Lighting model 1.2</strong>
-              <p>Midtone warmth plus subtle softening for a warmer mood cue.</p>
-            </div>
-          </label>
-          <label class="settings-option">
             <input type="radio" name="algoVersion" value="v20" />
             <div>
               <strong>Lighting model 2.0 — Stronger global warmth (experimental)</strong>
@@ -229,6 +211,6 @@
       </div>
     </div>
 
-    <script src="app.js?v=20260207-26"></script>
+    <script src="app.js?v=20260207-27"></script>
   </body>
 </html>

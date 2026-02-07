@@ -185,6 +185,9 @@ function setAlgoVersion(version, persist = true) {
   if (algoBadge) {
     algoBadge.textContent = `Algo ${ALGO_LABELS[next]}`;
   }
+  if (algoActive) {
+    algoActive.textContent = ALGO_LABELS[next];
+  }
   algoRadios.forEach((radio) => {
     radio.checked = radio.value === next;
   });
@@ -397,8 +400,6 @@ function render() {
   const algo = currentAlgo;
   if (algo === "v2") {
     applyLightingV2(src, out, brightness, tone);
-  } else if (algo === "v3") {
-    applyLightingV3(src, out, brightness, tone);
   } else {
     applyLightingV1(src, out, brightness, tone);
   }
@@ -737,5 +738,10 @@ setMobileControls(false);
 
 // Auto-load sample photo on startup
 loadSampleImage();
+
+const mobileBuildVersion = document.getElementById("mobileBuildVersion");
+if (mobileBuildVersion) {
+  mobileBuildVersion.textContent = "Build " + APP_VERSION;
+}
 
 console.log("Room Viz " + APP_VERSION);

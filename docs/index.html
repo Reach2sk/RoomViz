@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Room Lighting Visualizer</title>
-    <link rel="stylesheet" href="styles.css?v=20260207-03" />
+    <link rel="stylesheet" href="styles.css?v=20260207-07" />
   </head>
   <body>
     <div class="page">
@@ -86,6 +86,10 @@
             <span>📷 Sample photo ·&nbsp;</span>
             <button id="uploadOwnBtn" class="sample-banner-btn" type="button">Upload your own room</button>
           </div>
+          <p class="disclaimer mobile-only mobile-disclaimer">
+            Visual guide only. Real rooms vary by fixture, finish, and daylight.
+            <span class="build-version" id="mobileBuildVersion"></span>
+          </p>
           <div id="ahaToast" class="aha-toast" role="status" aria-live="polite">
             This is why bright lights at night feel harsh.
           </div>
@@ -207,6 +211,6 @@
       </div>
     </div>
 
-    <script src="app.js?v=20260207-04"></script>
+    <script src="app.js?v=20260207-07"></script>
   </body>
 </html>

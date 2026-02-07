@@ -540,6 +540,18 @@ canvas {
   margin: 0;
 }
 
+.mobile-disclaimer {
+  text-align: center;
+  padding: 8px 16px 4px;
+}
+
+.build-version {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  opacity: 0.6;
+}
+
 /* Footer removed */
 
 [data-disabled="true"] {
@@ -685,6 +697,14 @@ canvas {
 }
 
 @media (max-width: 640px), (pointer: coarse) {
+  .desktop-only {
+    display: none !important;
+  }
+
+  .mobile-only {
+    display: inline-flex !important;
+  }
+
   .page {
     padding: 8px 8px 16px;
     overflow-x: hidden;

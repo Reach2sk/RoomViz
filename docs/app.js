@@ -1,4 +1,4 @@
-const APP_VERSION = "2.0";
+const APP_VERSION = "2.1";
 
 const fileInput = document.getElementById("fileInput");
 const uploadBtn = document.getElementById("uploadBtn");
@@ -22,7 +22,6 @@ const loadingOverlay = document.getElementById("loadingOverlay");
 const controlsPanel = document.getElementById("controlsPanel");
 const sheetToggle = document.getElementById("sheetToggle");
 const photoActions = document.getElementById("photoActions");
-const photoStatus = document.getElementById("photoStatus");
 const settingsModal = document.getElementById("settingsModal");
 const settingsBackdrop = document.getElementById("settingsBackdrop");
 const settingsClose = document.getElementById("settingsClose");
@@ -663,9 +662,6 @@ function hideSampleBanner() {
 function updatePhotoActions() {
   if (!photoActions) return;
   photoActions.style.display = originalImageData ? "flex" : "none";
-  if (photoStatus) {
-    photoStatus.style.display = isSamplePhoto ? "inline-flex" : "none";
-  }
   if (replaceBtn) {
     replaceBtn.textContent = isSamplePhoto ? "Upload your own photo" : "Change photo";
   }

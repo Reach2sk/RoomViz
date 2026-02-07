@@ -879,6 +879,8 @@ canvas {
   }
 
   .mc-toggle.is-nudging .mc-chevron {
+    border-right-color: var(--accent);
+    border-bottom-color: var(--accent);
     animation: nudge 1.6s ease-in-out infinite;
   }
 

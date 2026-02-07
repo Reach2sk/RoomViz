@@ -1,4 +1,4 @@
-const APP_VERSION = "2.3";
+const APP_VERSION = "2.4";
 
 const fileInput = document.getElementById("fileInput");
 const uploadBtn = document.getElementById("uploadBtn");

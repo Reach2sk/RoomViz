@@ -1,4 +1,4 @@
-const APP_VERSION = "1.4";
+const APP_VERSION = "1.5";
 
 const fileInput = document.getElementById("fileInput");
 const uploadBtn = document.getElementById("uploadBtn");
@@ -122,14 +122,21 @@ const NEUTRAL_WB = kelvinToRgb(6500);
 
 function tempMultipliers(toneSelectionValue) {
   if (toneSelectionValue === 0) {
-    return { r: 1, g: 1, b: 1 };
+    return { r: 1, g: 1, b: 1, gain: 1 };
   }
   const kelvin = clamp(6500 + toneSelectionValue * 3500, 2500, 9000);
   const wb = kelvinToRgb(kelvin);
+  const r = wb.r / NEUTRAL_WB.r;
+  const g = wb.g / NEUTRAL_WB.g;
+  const b = wb.b / NEUTRAL_WB.b;
+  const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  const coolBoost = 1 + 0.08 * Math.max(toneSelectionValue, 0);
+  const gain = clamp((1 / Math.max(lum, 1e-6)) * coolBoost, 0.85, 1.35);
   return {
-    r: wb.r / NEUTRAL_WB.r,
-    g: wb.g / NEUTRAL_WB.g,
-    b: wb.b / NEUTRAL_WB.b,
+    r,
+    g,
+    b,
+    gain,
   };
 }
 
@@ -553,9 +560,10 @@ function applyLightingV2X(src, out, brightness, toneSelectionValue, width, heigh
     const daylight = daylightMask ? daylightMask[index] : 0;
     const toneStrength = clamp(0.4 + 0.9 * mid, 0, 1.2) * (1 - daylight * 0.75);
 
-    let r = or * (1 + (tempMul.r - 1) * toneStrength);
-    let g = og * (1 + (tempMul.g - 1) * toneStrength);
-    let b = ob * (1 + (tempMul.b - 1) * toneStrength);
+    const scale = 1 + (tempMul.gain - 1) * toneStrength;
+    let r = or * (1 + (tempMul.r - 1) * toneStrength) * scale;
+    let g = og * (1 + (tempMul.g - 1) * toneStrength) * scale;
+    let b = ob * (1 + (tempMul.b - 1) * toneStrength) * scale;
 
     r *= exposure;
     g *= exposure;

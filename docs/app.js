@@ -102,6 +102,44 @@ function midtoneWeight(luma) {
   return clamp(rise * fall, 0, 1);
 }
 
+function kelvinToRgb(kelvin) {
+  const temp = kelvin / 100;
+  let r;
+  let g;
+  let b;
+
+  if (temp <= 66) {
+    r = 1;
+    g = clamp(0.390081578769 * Math.log(temp) - 0.631841443788, 0, 1);
+    if (temp <= 19) {
+      b = 0;
+    } else {
+      b = clamp(0.54320678911 * Math.log(temp - 10) - 1.19625408914, 0, 1);
+    }
+  } else {
+    r = clamp(1.29293618606 * Math.pow(temp - 60, -0.1332047592), 0, 1);
+    g = clamp(1.12989086089 * Math.pow(temp - 60, -0.0755148492), 0, 1);
+    b = 1;
+  }
+
+  return { r, g, b };
+}
+
+const NEUTRAL_WB = kelvinToRgb(6500);
+
+function tempMultipliers(toneSelectionValue) {
+  if (toneSelectionValue === 0) {
+    return { r: 1, g: 1, b: 1 };
+  }
+  const kelvin = clamp(6500 - toneSelectionValue * 3500, 2500, 9000);
+  const wb = kelvinToRgb(kelvin);
+  return {
+    r: wb.r / NEUTRAL_WB.r,
+    g: wb.g / NEUTRAL_WB.g,
+    b: wb.b / NEUTRAL_WB.b,
+  };
+}
+
 function computeDaylightMask(data, width, height) {
   const mask = new Float32Array(width * height);
   const step = 1;
@@ -689,7 +727,8 @@ function applyLightingV2X(src, out, brightness, toneSelectionValue, width, heigh
   const gamma = lerp(1.25, 1.0, brightness);
 
   const baseTone = toneSelectionValue * 0.7;
-  const ambient = 0.22;
+  const ambient = lightPoints.length ? 0.22 : 0.08;
+  const tempMul = tempMultipliers(toneSelectionValue);
 
   for (let i = 0; i < src.length; i += 4) {
     const index = i / 4;
@@ -703,19 +742,15 @@ function applyLightingV2X(src, out, brightness, toneSelectionValue, width, heigh
     const spill = lightInfluence ? lightInfluence.spill[index] : 0;
     const core = lightInfluence ? lightInfluence.core[index] : 0;
 
-    const toneScale = clamp(ambient + (1 - ambient) * spill, 0, 1);
-    const coreScale = clamp(0.6 + 0.7 * core, 0, 1.2);
-    const baseMask = mid * toneScale * (1 - daylight * 0.85);
-    const coreMask = clamp(coreScale * (1 - daylight * 0.4), 0, 1.2);
-    const tone = baseTone * (baseMask + coreMask * 0.45);
+    const spillStrength = clamp(ambient + (1 - ambient) * spill, 0, 1);
+    const coreStrength = clamp(core * 1.35, 0, 1.2);
+    const baseMask = mid * spillStrength * (1 - daylight * 0.85);
+    const coreMask = coreStrength * (1 - daylight * 0.4);
+    const toneStrength = clamp(baseMask + coreMask * 0.85, 0, 1.6);
 
-    const rMul = 1 - 0.07 * tone;
-    const gMul = 1 - 0.02 * tone;
-    const bMul = 1 + 0.09 * tone;
-
-    let r = or * rMul;
-    let g = og * gMul;
-    let b = ob * bMul;
+    let r = or * (1 + (tempMul.r - 1) * toneStrength);
+    let g = og * (1 + (tempMul.g - 1) * toneStrength);
+    let b = ob * (1 + (tempMul.b - 1) * toneStrength);
 
     r *= exposure;
     g *= exposure;
@@ -730,9 +765,10 @@ function applyLightingV2X(src, out, brightness, toneSelectionValue, width, heigh
     b = Math.pow(Math.max(b, 0), gamma);
 
     const protect = smoothstep(0.75, 0.95, luma);
-    r = r * (1 - protect) + or * protect;
-    g = g * (1 - protect) + og * protect;
-    b = b * (1 - protect) + ob * protect;
+    const protectFactor = clamp(protect * (1 - coreMask * 0.35), 0, 1);
+    r = r * (1 - protectFactor) + or * protectFactor;
+    g = g * (1 - protectFactor) + og * protectFactor;
+    b = b * (1 - protectFactor) + ob * protectFactor;
 
     out[i] = Math.round(clamp(r) * 255);
     out[i + 1] = Math.round(clamp(g) * 255);
@@ -867,7 +903,7 @@ function updateLightOverlay() {
   editLightsToggle.setAttribute("aria-pressed", String(editLights));
   lightOverlay.classList.toggle("is-editing", editLights);
   if (lightPrompt) {
-    lightPrompt.style.display = show && editLights && lightPoints.length ? "block" : "none";
+    lightPrompt.style.display = show && editLights ? "block" : "none";
   }
 
   if (!show) {
@@ -918,6 +954,8 @@ function applyImageSource(imageSource) {
   hasShownAha = false;
   setControlsEnabled(true);
   resetControls();
+  editLights = false;
+  lightPoints = [];
   daylightMask = computeDaylightMask(originalImageData.data, targetWidth, targetHeight);
   midtoneMask = buildMidtoneMask(originalImageData.data, targetWidth, targetHeight);
   rebuildLightInfluence(targetWidth, targetHeight);

@@ -1,4 +1,4 @@
-const APP_VERSION = "2.4";
+const APP_VERSION = "2.5";
 
 const fileInput = document.getElementById("fileInput");
 const uploadBtn = document.getElementById("uploadBtn");
@@ -63,6 +63,7 @@ let rafPending = false;
 const MAX_WIDTH = 1200;
 const MAX_HEIGHT = 800;
 const ALGO_KEY = "roomviz_algo_version";
+const ALGO_USER_KEY = "roomviz_algo_user_choice";
 const CONTROLS_USED_KEY = "roomviz_controls_used";
 const DEFAULT_ALGO = "v20";
 let currentAlgo = DEFAULT_ALGO;
@@ -284,7 +285,8 @@ function getAlgoVersion() {
 
 function initAlgoVersion() {
   const stored = localStorage.getItem(ALGO_KEY);
-  if (stored && ALGO_LABELS[stored]) {
+  const hasUserChoice = localStorage.getItem(ALGO_USER_KEY) === "1";
+  if (hasUserChoice && stored && ALGO_LABELS[stored]) {
     setAlgoVersion(stored, false);
     return;
   }
@@ -943,7 +945,10 @@ document.addEventListener("keydown", (event) => {
 
 algoRadios.forEach((radio) => {
   radio.addEventListener("change", () => {
-    if (radio.checked) setAlgoVersion(radio.value);
+    if (radio.checked) {
+      localStorage.setItem(ALGO_USER_KEY, "1");
+      setAlgoVersion(radio.value);
+    }
   });
 });
 

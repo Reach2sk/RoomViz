@@ -177,6 +177,15 @@ function getAlgoVersion() {
   return ALGO_LABELS[stored] ? stored : DEFAULT_ALGO;
 }
 
+function initAlgoVersion() {
+  const stored = localStorage.getItem(ALGO_KEY);
+  if (!stored || !ALGO_LABELS[stored]) {
+    setAlgoVersion(DEFAULT_ALGO, true);
+  } else {
+    setAlgoVersion(stored, false);
+  }
+}
+
 function setAlgoVersion(version, persist = true) {
   const next = ALGO_LABELS[version] ? version : DEFAULT_ALGO;
   currentAlgo = next;
@@ -733,7 +742,7 @@ if (MOBILE_MEDIA.addEventListener) {
 
 updateBeforeAfterUI();
 updateSliderLabels();
-setAlgoVersion(getAlgoVersion(), false);
+initAlgoVersion();
 initSheetState();
 setMobileControls(false);
 

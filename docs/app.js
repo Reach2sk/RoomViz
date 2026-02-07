@@ -178,7 +178,8 @@ function showAhaToast() {
 
 const ALGO_LABELS = {
   v1: "v1",
-  v5: "v1.1",
+  v11: "v1.1",
+  v12: "v1.2",
 };
 
 function getAlgoVersion() {
@@ -188,6 +189,10 @@ function getAlgoVersion() {
 
 function initAlgoVersion() {
   const stored = localStorage.getItem(ALGO_KEY);
+  if (stored === "v5") {
+    setAlgoVersion("v11", true);
+    return;
+  }
   if (stored && ALGO_LABELS[stored]) {
     setAlgoVersion(stored, false);
   } else {
@@ -209,10 +214,11 @@ function setAlgoVersion(version, persist = true) {
   }
   if (abA && abB) {
     const isA = next === "v1";
+    const isB = next === "v12";
     abA.classList.toggle("is-active", isA);
-    abB.classList.toggle("is-active", !isA);
+    abB.classList.toggle("is-active", isB);
     abA.setAttribute("aria-pressed", String(isA));
-    abB.setAttribute("aria-pressed", String(!isA));
+    abB.setAttribute("aria-pressed", String(isB));
   }
   algoRadios.forEach((radio) => {
     radio.checked = radio.value === next;
@@ -346,7 +352,7 @@ function applyLightingV1(src, out, brightness, toneSelectionValue) {
   }
 }
 
-function applyLightingV5(src, out, brightness, toneSelectionValue) {
+function applyLightingV11(src, out, brightness, toneSelectionValue) {
   const exposure = lerp(0.35, 1.12, brightness);
   const contrast = lerp(1.12, 0.98, brightness);
   const gamma = lerp(1.25, 1.0, brightness);
@@ -376,6 +382,58 @@ function applyLightingV5(src, out, brightness, toneSelectionValue) {
     r = (r - 0.5) * contrast + 0.5;
     g = (g - 0.5) * contrast + 0.5;
     b = (b - 0.5) * contrast + 0.5;
+
+    r = Math.pow(Math.max(r, 0), gamma);
+    g = Math.pow(Math.max(g, 0), gamma);
+    b = Math.pow(Math.max(b, 0), gamma);
+
+    const protect = smoothstep(0.75, 0.95, luma);
+    r = r * (1 - protect) + or * protect;
+    g = g * (1 - protect) + og * protect;
+    b = b * (1 - protect) + ob * protect;
+
+    out[i] = Math.round(clamp(r) * 255);
+    out[i + 1] = Math.round(clamp(g) * 255);
+    out[i + 2] = Math.round(clamp(b) * 255);
+    out[i + 3] = src[i + 3];
+  }
+}
+
+function applyLightingV12(src, out, brightness, toneSelectionValue) {
+  const exposure = lerp(0.35, 1.12, brightness);
+  const contrast = lerp(1.12, 0.98, brightness);
+  const gamma = lerp(1.25, 1.0, brightness);
+
+  const baseTone = toneSelectionValue * 0.7;
+
+  for (let i = 0; i < src.length; i += 4) {
+    const or = src[i] / 255;
+    const og = src[i + 1] / 255;
+    const ob = src[i + 2] / 255;
+
+    const luma = 0.2126 * or + 0.7152 * og + 0.0722 * ob;
+    const midWeight = midtoneWeight(luma);
+    const tone = baseTone * midWeight;
+
+    const rMul = 1 - 0.07 * tone;
+    const gMul = 1 - 0.02 * tone;
+    const bMul = 1 + 0.09 * tone;
+
+    let r = or * rMul;
+    let g = og * gMul;
+    let b = ob * bMul;
+
+    r *= exposure;
+    g *= exposure;
+    b *= exposure;
+
+    const warmAmount = Math.max(toneSelectionValue, 0);
+    const soften = 1 - 0.04 * warmAmount * midWeight;
+    const contrastAdjusted = contrast * soften;
+
+    r = (r - 0.5) * contrastAdjusted + 0.5;
+    g = (g - 0.5) * contrastAdjusted + 0.5;
+    b = (b - 0.5) * contrastAdjusted + 0.5;
 
     r = Math.pow(Math.max(r, 0), gamma);
     g = Math.pow(Math.max(g, 0), gamma);
@@ -471,8 +529,10 @@ function render() {
 
   const algo = currentAlgo;
   lastRenderedAlgo = algo;
-  if (algo === "v5") {
-    applyLightingV5(src, out, brightness, tone);
+  if (algo === "v12") {
+    applyLightingV12(src, out, brightness, tone);
+  } else if (algo === "v11") {
+    applyLightingV11(src, out, brightness, tone);
   } else {
     applyLightingV1(src, out, brightness, tone);
   }
@@ -762,7 +822,7 @@ if (abA) {
   abA.addEventListener("click", () => setAlgoVersion("v1"));
 }
 if (abB) {
-  abB.addEventListener("click", () => setAlgoVersion("v5"));
+  abB.addEventListener("click", () => setAlgoVersion("v12"));
 }
 
 window.addEventListener("scroll", maybeHideScrollHint, { passive: true });

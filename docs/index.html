@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Room Lighting Visualizer</title>
-    <link rel="stylesheet" href="styles.css?v=20260207-17" />
+    <link rel="stylesheet" href="styles.css?v=20260207-18" />
   </head>
   <body>
     <div class="page">
@@ -86,10 +86,10 @@
                 aria-haspopup="dialog"
                 aria-label="Open settings"
               >
-                Algo v1
-              </button>
-            </div>
+              Algo v1
+            </button>
           </div>
+        </div>
           <p class="disclaimer mobile-only mobile-disclaimer">
             Visual guide only. Real rooms vary by fixture, finish, and daylight.
             <span class="build-version" id="mobileBuildVersion"></span>
@@ -205,16 +205,23 @@
             </div>
           </label>
           <label class="settings-option">
-            <input type="radio" name="algoVersion" value="v5" />
+            <input type="radio" name="algoVersion" value="v11" />
             <div>
               <strong>Lighting model v1.1</strong>
               <p>Midtone‑biased warmth enhancement for clearer Warm/Neutral/Cool shifts.</p>
+            </div>
+          </label>
+          <label class="settings-option">
+            <input type="radio" name="algoVersion" value="v12" />
+            <div>
+              <strong>Lighting model v1.2</strong>
+              <p>Midtone warmth plus subtle softening for a warmer mood cue.</p>
             </div>
           </label>
         </div>
       </div>
     </div>
 
-    <script src="app.js?v=20260207-17"></script>
+    <script src="app.js?v=20260207-18"></script>
   </body>
 </html>

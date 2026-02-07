@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Room Lighting Visualizer</title>
-    <link rel="stylesheet" href="styles.css?v=20260207-18" />
+    <link rel="stylesheet" href="styles.css?v=20260207-19" />
   </head>
   <body>
     <div class="page">
@@ -29,6 +29,11 @@
                 </button>
               </div>
             </div>
+            <button id="editLightsToggle" class="edit-lights-toggle" type="button" aria-pressed="false">
+              Edit lights
+            </button>
+            <div id="lightPrompt" class="light-prompt">We found the lights. Tap to add/remove.</div>
+            <div id="lightOverlay" class="light-overlay" aria-hidden="true"></div>
 
             <!-- Mobile overlay controls (inside canvas-wrap, over the image) -->
             <div class="mobile-controls is-collapsed" id="mobileControls">
@@ -196,32 +201,39 @@
         </div>
         <div class="settings-section">
           <p class="settings-label">Algorithm version</p>
-          <p class="settings-meta">Active renderer: <span id="algoActive">v1</span></p>
+          <p class="settings-meta">Active renderer: <span id="algoActive">Model 1.0</span></p>
           <label class="settings-option">
             <input type="radio" name="algoVersion" value="v1" />
             <div>
-              <strong>Lighting model v1</strong>
+              <strong>Lighting model 1.0</strong>
               <p>Reference baseline with natural, trusted tone response.</p>
             </div>
           </label>
           <label class="settings-option">
             <input type="radio" name="algoVersion" value="v11" />
             <div>
-              <strong>Lighting model v1.1</strong>
+              <strong>Lighting model 1.1</strong>
               <p>Midtone‑biased warmth enhancement for clearer Warm/Neutral/Cool shifts.</p>
             </div>
           </label>
           <label class="settings-option">
             <input type="radio" name="algoVersion" value="v12" />
             <div>
-              <strong>Lighting model v1.2</strong>
+              <strong>Lighting model 1.2</strong>
               <p>Midtone warmth plus subtle softening for a warmer mood cue.</p>
+            </div>
+          </label>
+          <label class="settings-option">
+            <input type="radio" name="algoVersion" value="v2x" />
+            <div>
+              <strong>Lighting model 2.x — Source‑anchored warmth (experimental)</strong>
+              <p>Anchors warmth to detected light sources with spill and daylight protection.</p>
             </div>
           </label>
         </div>
       </div>
     </div>
 
-    <script src="app.js?v=20260207-18"></script>
+    <script src="app.js?v=20260207-19"></script>
   </body>
 </html>

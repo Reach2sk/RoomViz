@@ -32,6 +32,9 @@ const settingsBackdrop = document.getElementById("settingsBackdrop");
 const settingsClose = document.getElementById("settingsClose");
 const algoBadge = document.getElementById("algoBadge");
 const algoActive = document.getElementById("algoActive");
+const editLightsToggle = document.getElementById("editLightsToggle");
+const lightPrompt = document.getElementById("lightPrompt");
+const lightOverlay = document.getElementById("lightOverlay");
 const algoRadios = Array.from(document.querySelectorAll('input[name="algoVersion"]'));
 
 // Mobile overlay controls
@@ -73,6 +76,12 @@ const ALGO_KEY = "roomviz_algo_version";
 const DEFAULT_ALGO = "v1";
 let currentAlgo = DEFAULT_ALGO;
 let lastRenderedAlgo = null;
+let lightPoints = [];
+let editLights = false;
+let lightInfluence = null;
+let daylightMask = null;
+let midtoneMask = null;
+let activeDrag = null;
 
 function lerp(min, max, t) {
   return min + (max - min) * t;
@@ -91,6 +100,224 @@ function midtoneWeight(luma) {
   const rise = smoothstep(0.2, 0.55, luma);
   const fall = 1 - smoothstep(0.65, 0.92, luma);
   return clamp(rise * fall, 0, 1);
+}
+
+function computeDaylightMask(data, width, height) {
+  const mask = new Float32Array(width * height);
+  const step = 1;
+  for (let y = 0; y < height; y += step) {
+    for (let x = 0; x < width; x += step) {
+      const idx = (y * width + x) * 4;
+      const r = data[idx] / 255;
+      const g = data[idx + 1] / 255;
+      const b = data[idx + 2] / 255;
+      const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+      const max = Math.max(r, g, b);
+      const min = Math.min(r, g, b);
+      const sat = max - min;
+
+      const bright = smoothstep(0.82, 0.96, luma);
+      const lowSat = 1 - smoothstep(0.08, 0.25, sat);
+      const daylight = bright * lowSat;
+      mask[y * width + x] = daylight;
+    }
+  }
+  return mask;
+}
+
+function buildMidtoneMask(data, width, height) {
+  const mask = new Float32Array(width * height);
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const idx = (y * width + x) * 4;
+      const r = data[idx] / 255;
+      const g = data[idx + 1] / 255;
+      const b = data[idx + 2] / 255;
+      const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+      mask[y * width + x] = midtoneWeight(luma);
+    }
+  }
+  return mask;
+}
+
+function detectLightSources(data, width, height) {
+  const step = Math.max(2, Math.floor(Math.min(width, height) / 120));
+  const w = Math.floor(width / step);
+  const h = Math.floor(height / step);
+  const luma = new Float32Array(w * h);
+  const sat = new Float32Array(w * h);
+
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const srcX = x * step;
+      const srcY = y * step;
+      const idx = (srcY * width + srcX) * 4;
+      const r = data[idx] / 255;
+      const g = data[idx + 1] / 255;
+      const b = data[idx + 2] / 255;
+      const max = Math.max(r, g, b);
+      const min = Math.min(r, g, b);
+      const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+      luma[y * w + x] = lum;
+      sat[y * w + x] = max - min;
+    }
+  }
+
+  const daylight = new Uint8Array(w * h);
+  for (let i = 0; i < luma.length; i++) {
+    if (luma[i] > 0.86 && sat[i] < 0.12) {
+      daylight[i] = 1;
+    }
+  }
+
+  const daylightLarge = new Uint8Array(w * h);
+  const visited = new Uint8Array(w * h);
+  const minDaylightSize = Math.round(w * h * 0.02);
+  const dirs = [
+    [1, 0],
+    [-1, 0],
+    [0, 1],
+    [0, -1],
+  ];
+
+  for (let i = 0; i < daylight.length; i++) {
+    if (!daylight[i] || visited[i]) continue;
+    const stack = [i];
+    visited[i] = 1;
+    const cells = [];
+    while (stack.length) {
+      const idx = stack.pop();
+      cells.push(idx);
+      const cx = idx % w;
+      const cy = Math.floor(idx / w);
+      for (const [dx, dy] of dirs) {
+        const nx = cx + dx;
+        const ny = cy + dy;
+        if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue;
+        const ni = ny * w + nx;
+        if (visited[ni] || !daylight[ni]) continue;
+        visited[ni] = 1;
+        stack.push(ni);
+      }
+    }
+    if (cells.length >= minDaylightSize) {
+      for (const idx of cells) {
+        daylightLarge[idx] = 1;
+      }
+    }
+  }
+
+  const candidates = new Uint8Array(w * h);
+  for (let y = 1; y < h - 1; y++) {
+    for (let x = 1; x < w - 1; x++) {
+      const idx = y * w + x;
+      if (daylightLarge[idx]) continue;
+      const lum = luma[idx];
+      if (lum < 0.82) continue;
+      let sum = 0;
+      let count = 0;
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          if (dx === 0 && dy === 0) continue;
+          sum += luma[(y + dy) * w + (x + dx)];
+          count += 1;
+        }
+      }
+      const local = sum / count;
+      if (lum - local > 0.08) {
+        candidates[idx] = 1;
+      }
+    }
+  }
+
+  const visitedCand = new Uint8Array(w * h);
+  const sources = [];
+  const minSize = 3;
+  const maxSize = Math.round(w * h * 0.02);
+
+  for (let i = 0; i < candidates.length; i++) {
+    if (!candidates[i] || visitedCand[i]) continue;
+    const stack = [i];
+    visitedCand[i] = 1;
+    let count = 0;
+    let sumX = 0;
+    let sumY = 0;
+    let sumL = 0;
+    while (stack.length) {
+      const idx = stack.pop();
+      const cx = idx % w;
+      const cy = Math.floor(idx / w);
+      count += 1;
+      sumX += cx;
+      sumY += cy;
+      sumL += luma[idx];
+      for (const [dx, dy] of dirs) {
+        const nx = cx + dx;
+        const ny = cy + dy;
+        if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue;
+        const ni = ny * w + nx;
+        if (visitedCand[ni] || !candidates[ni]) continue;
+        visitedCand[ni] = 1;
+        stack.push(ni);
+      }
+    }
+    if (count < minSize || count > maxSize) continue;
+    const cx = sumX / count;
+    const cy = sumY / count;
+    const avgL = sumL / count;
+    const strength = clamp((avgL - 0.75) / 0.25, 0.3, 1);
+    const sizeNorm = Math.sqrt(count) / Math.max(w, h);
+    const baseRadius = clamp(sizeNorm * 1.6, 0.02, 0.06);
+    sources.push({
+      x: (cx * step) / width,
+      y: (cy * step) / height,
+      strength,
+      sourceRadius: baseRadius * 0.6,
+      spillRadius: baseRadius * 2.4,
+      detected: true,
+    });
+  }
+
+  sources.sort((a, b) => b.strength - a.strength);
+  return sources.slice(0, 8);
+}
+
+function rebuildLightInfluence(width, height) {
+  if (!lightPoints.length) {
+    lightInfluence = null;
+    return;
+  }
+  const influence = new Float32Array(width * height);
+  for (let i = 0; i < influence.length; i++) influence[i] = 0;
+
+  for (const light of lightPoints) {
+    const lx = light.x * width;
+    const ly = light.y * height;
+    const sourceRadius = (light.sourceRadius || 0.03) * Math.min(width, height);
+    const spillRadius = (light.spillRadius || 0.08) * Math.min(width, height);
+    const strength = light.strength || 0.7;
+
+    const minX = Math.max(0, Math.floor(lx - spillRadius));
+    const maxX = Math.min(width - 1, Math.ceil(lx + spillRadius));
+    const minY = Math.max(0, Math.floor(ly - spillRadius));
+    const maxY = Math.min(height - 1, Math.ceil(ly + spillRadius));
+
+    for (let y = minY; y <= maxY; y++) {
+      for (let x = minX; x <= maxX; x++) {
+        const dx = x - lx;
+        const dy = y - ly;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist > spillRadius) continue;
+        const source = 1 - smoothstep(0, sourceRadius, dist);
+        const spill = 1 - smoothstep(sourceRadius, spillRadius, dist);
+        const weight = clamp(source * 0.85 + spill * 0.55, 0, 1) * strength;
+        const idx = y * width + x;
+        influence[idx] = clamp(influence[idx] + weight, 0, 1);
+      }
+    }
+  }
+
+  lightInfluence = influence;
 }
 
 function setControlsEnabled(enabled) {
@@ -177,9 +404,10 @@ function showAhaToast() {
 }
 
 const ALGO_LABELS = {
-  v1: "v1",
-  v11: "v1.1",
-  v12: "v1.2",
+  v1: "1.0",
+  v11: "1.1",
+  v12: "1.2",
+  v2x: "2.x",
 };
 
 function getAlgoVersion() {
@@ -207,10 +435,10 @@ function setAlgoVersion(version, persist = true) {
     localStorage.setItem(ALGO_KEY, next);
   }
   if (algoBadge) {
-    algoBadge.textContent = `Algo ${ALGO_LABELS[next]}`;
+    algoBadge.textContent = `Model ${ALGO_LABELS[next]}`;
   }
   if (algoActive) {
-    algoActive.textContent = ALGO_LABELS[next];
+    algoActive.textContent = `Model ${ALGO_LABELS[next]}`;
   }
   if (abA && abB) {
     const isA = next === "v1";
@@ -223,6 +451,7 @@ function setAlgoVersion(version, persist = true) {
   algoRadios.forEach((radio) => {
     radio.checked = radio.value === next;
   });
+  updateLightOverlay();
   scheduleRender();
 }
 
@@ -451,6 +680,60 @@ function applyLightingV12(src, out, brightness, toneSelectionValue) {
   }
 }
 
+function applyLightingV2X(src, out, brightness, toneSelectionValue, width, height) {
+  const exposure = lerp(0.35, 1.12, brightness);
+  const contrast = lerp(1.12, 0.98, brightness);
+  const gamma = lerp(1.25, 1.0, brightness);
+
+  const baseTone = toneSelectionValue * 0.7;
+  const ambient = 0.18;
+
+  for (let i = 0; i < src.length; i += 4) {
+    const index = i / 4;
+    const or = src[i] / 255;
+    const og = src[i + 1] / 255;
+    const ob = src[i + 2] / 255;
+
+    const mid = midtoneMask ? midtoneMask[index] : midtoneWeight(0.2126 * or + 0.7152 * og + 0.0722 * ob);
+    const daylight = daylightMask ? daylightMask[index] : 0;
+    const influence = lightInfluence ? lightInfluence[index] : 0;
+
+    const toneScale = clamp(ambient + (1 - ambient) * influence, 0, 1);
+    const tone = baseTone * mid * toneScale * (1 - daylight * 0.85);
+
+    const rMul = 1 - 0.07 * tone;
+    const gMul = 1 - 0.02 * tone;
+    const bMul = 1 + 0.09 * tone;
+
+    let r = or * rMul;
+    let g = og * gMul;
+    let b = ob * bMul;
+
+    r *= exposure;
+    g *= exposure;
+    b *= exposure;
+
+    r = (r - 0.5) * contrast + 0.5;
+    g = (g - 0.5) * contrast + 0.5;
+    b = (b - 0.5) * contrast + 0.5;
+
+    r = Math.pow(Math.max(r, 0), gamma);
+    g = Math.pow(Math.max(g, 0), gamma);
+    b = Math.pow(Math.max(b, 0), gamma);
+
+    const luma = 0.2126 * or + 0.7152 * og + 0.0722 * ob;
+    const protect = smoothstep(0.75, 0.95, luma);
+    r = r * (1 - protect) + or * protect;
+    g = g * (1 - protect) + og * protect;
+    b = b * (1 - protect) + ob * protect;
+
+    out[i] = Math.round(clamp(r) * 255);
+    out[i + 1] = Math.round(clamp(g) * 255);
+    out[i + 2] = Math.round(clamp(b) * 255);
+    out[i + 3] = src[i + 3];
+  }
+}
+
 function applyLightingV2(src, out, brightness, toneSelectionValue, variant = "v2") {
   lastRenderedAlgo = variant === "v3" ? "v3" : "v2";
   const baseExposure = lerp(0.28, 1.1, brightness);
@@ -529,7 +812,9 @@ function render() {
 
   const algo = currentAlgo;
   lastRenderedAlgo = algo;
-  if (algo === "v12") {
+  if (algo === "v2x") {
+    applyLightingV2X(src, out, brightness, tone, canvas.width, canvas.height);
+  } else if (algo === "v12") {
     applyLightingV12(src, out, brightness, tone);
   } else if (algo === "v11") {
     applyLightingV11(src, out, brightness, tone);
@@ -539,8 +824,9 @@ function render() {
 
   if (algoActive && lastRenderedAlgo) {
     const label = ALGO_LABELS[lastRenderedAlgo] ?? lastRenderedAlgo;
-    if (algoActive.textContent !== label) {
-      algoActive.textContent = label;
+    const text = `Model ${label}`;
+    if (algoActive.textContent !== text) {
+      algoActive.textContent = text;
     }
   }
 
@@ -563,6 +849,34 @@ function updatePhotoActions() {
   if (replaceBtn) {
     replaceBtn.textContent = isSamplePhoto ? "Upload your own photo" : "Change photo";
   }
+}
+
+function updateLightOverlay() {
+  if (!lightOverlay || !editLightsToggle) return;
+  const show = originalImageData && currentAlgo === "v2x";
+  lightOverlay.style.display = show ? "block" : "none";
+  editLightsToggle.style.display = show ? "inline-flex" : "none";
+  editLightsToggle.classList.toggle("is-active", editLights);
+  editLightsToggle.setAttribute("aria-pressed", String(editLights));
+  lightOverlay.classList.toggle("is-editing", editLights);
+  if (lightPrompt) {
+    lightPrompt.style.display = show && editLights && lightPoints.length ? "block" : "none";
+  }
+
+  if (!show) {
+    if (lightPrompt) lightPrompt.style.display = "none";
+    return;
+  }
+
+  lightOverlay.innerHTML = "";
+  lightPoints.forEach((light, index) => {
+    const dot = document.createElement("div");
+    dot.className = `light-dot${light.detected ? " is-detected" : ""}`;
+    dot.dataset.index = String(index);
+    dot.style.left = `${light.x * 100}%`;
+    dot.style.top = `${light.y * 100}%`;
+    lightOverlay.appendChild(dot);
+  });
 }
 
 function resetControls() {
@@ -597,6 +911,11 @@ function applyImageSource(imageSource) {
   hasShownAha = false;
   setControlsEnabled(true);
   resetControls();
+  lightPoints = detectLightSources(originalImageData.data, targetWidth, targetHeight);
+  daylightMask = computeDaylightMask(originalImageData.data, targetWidth, targetHeight);
+  midtoneMask = buildMidtoneMask(originalImageData.data, targetWidth, targetHeight);
+  rebuildLightInfluence(targetWidth, targetHeight);
+  updateLightOverlay();
   setLoading(false);
   setScrollHint(true);
   initSheetState();
@@ -823,6 +1142,85 @@ if (abA) {
 }
 if (abB) {
   abB.addEventListener("click", () => setAlgoVersion("v12"));
+}
+
+if (editLightsToggle) {
+  editLightsToggle.addEventListener("click", () => {
+    editLights = !editLights;
+    updateLightOverlay();
+  });
+}
+
+if (lightOverlay) {
+  lightOverlay.addEventListener("pointerdown", (event) => {
+    if (!editLights) return;
+    const target = event.target;
+    const rect = lightOverlay.getBoundingClientRect();
+    const x = (event.clientX - rect.left) / rect.width;
+    const y = (event.clientY - rect.top) / rect.height;
+
+    let index = -1;
+    if (target instanceof HTMLElement && target.classList.contains("light-dot")) {
+      index = Number(target.dataset.index);
+    } else {
+      lightPoints.push({
+        x: clamp(x, 0.02, 0.98),
+        y: clamp(y, 0.02, 0.98),
+        strength: 0.75,
+        sourceRadius: 0.03,
+        spillRadius: 0.09,
+        detected: false,
+      });
+      index = lightPoints.length - 1;
+      updateLightOverlay();
+    }
+
+    activeDrag = {
+      index,
+      startX: x,
+      startY: y,
+      moved: false,
+      wasNew: !target.classList?.contains("light-dot"),
+      targetWasDot: target.classList?.contains("light-dot"),
+    };
+    lightOverlay.setPointerCapture(event.pointerId);
+  });
+
+  lightOverlay.addEventListener("pointermove", (event) => {
+    if (!activeDrag || !editLights) return;
+    const rect = lightOverlay.getBoundingClientRect();
+    const x = (event.clientX - rect.left) / rect.width;
+    const y = (event.clientY - rect.top) / rect.height;
+    const dx = x - activeDrag.startX;
+    const dy = y - activeDrag.startY;
+    if (Math.hypot(dx, dy) > 0.01) {
+      activeDrag.moved = true;
+    }
+    const point = lightPoints[activeDrag.index];
+    if (point) {
+      point.x = clamp(x, 0.02, 0.98);
+      point.y = clamp(y, 0.02, 0.98);
+      updateLightOverlay();
+    }
+  });
+
+  const finishDrag = (event) => {
+    if (!activeDrag) return;
+    const { index, moved, wasNew, targetWasDot } = activeDrag;
+    if (targetWasDot && !moved && !wasNew) {
+      lightPoints.splice(index, 1);
+    }
+    activeDrag = null;
+    rebuildLightInfluence(canvas.width, canvas.height);
+    updateLightOverlay();
+    scheduleRender();
+    if (lightOverlay.hasPointerCapture(event.pointerId)) {
+      lightOverlay.releasePointerCapture(event.pointerId);
+    }
+  };
+
+  lightOverlay.addEventListener("pointerup", finishDrag);
+  lightOverlay.addEventListener("pointercancel", finishDrag);
 }
 
 window.addEventListener("scroll", maybeHideScrollHint, { passive: true });

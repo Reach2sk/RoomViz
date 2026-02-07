@@ -1,4 +1,4 @@
-const APP_VERSION = "1.5";
+const APP_VERSION = "1.6";
 
 const fileInput = document.getElementById("fileInput");
 const uploadBtn = document.getElementById("uploadBtn");
@@ -131,7 +131,8 @@ function tempMultipliers(toneSelectionValue) {
   const b = wb.b / NEUTRAL_WB.b;
   const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
   const coolBoost = 1 + 0.08 * Math.max(toneSelectionValue, 0);
-  const gain = clamp((1 / Math.max(lum, 1e-6)) * coolBoost, 0.85, 1.35);
+  const warmDim = 1 - 0.05 * Math.max(-toneSelectionValue, 0);
+  const gain = clamp((1 / Math.max(lum, 1e-6)) * coolBoost * warmDim, 0.82, 1.35);
   return {
     r,
     g,

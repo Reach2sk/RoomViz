@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Room Lighting Visualizer</title>
-    <link rel="stylesheet" href="styles.css?v=20260207-07" />
+    <link rel="stylesheet" href="styles.css?v=20260207-09" />
   </head>
   <body>
     <div class="page">
@@ -207,10 +207,17 @@
               <p>Separates bright daylight from interior lighting to avoid warm windows.</p>
             </div>
           </label>
+          <label class="settings-option">
+            <input type="radio" name="algoVersion" value="v3" />
+            <div>
+              <strong>v3.0 — Enhanced mood contrast</strong>
+              <p>Stronger interior warmth and slightly deeper shadows for a bolder mood shift.</p>
+            </div>
+          </label>
         </div>
       </div>
     </div>
 
-    <script src="app.js?v=20260207-07"></script>
+    <script src="app.js?v=20260207-09"></script>
   </body>
 </html>

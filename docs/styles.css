@@ -710,7 +710,7 @@ canvas {
     overflow-x: hidden;
   }
 
-  /* Keep algo badge visible on mobile */
+  /* Keep algo badge visible on mobile, aligned with Adjust lighting bar */
   .algo-badge {
     bottom: 72px;
     font-size: 11px;

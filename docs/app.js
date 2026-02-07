@@ -169,6 +169,7 @@ function showAhaToast() {
 const ALGO_LABELS = {
   v1: "v1.0",
   v2: "v2.0",
+  v3: "v3.0",
 };
 
 function getAlgoVersion() {
@@ -328,7 +329,7 @@ function applyLightingV2(src, out, brightness, toneSelectionValue, variant = "v2
   const shadowBoost = lerp(0.5, 0.0, brightness);
   const gamma = lerp(1.32, 1.0, brightness);
 
-  const tone = toneSelectionValue;
+  const tone = Math.sign(toneSelectionValue) * Math.pow(Math.abs(toneSelectionValue), 0.85);
 
   for (let i = 0; i < src.length; i += 4) {
     const or = src[i] / 255;
@@ -344,7 +345,7 @@ function applyLightingV2(src, out, brightness, toneSelectionValue, variant = "v2
     const contrast = 1 + (baseContrast - 1) * region;
 
     const shadow = Math.pow(1 - luma, 1.4);
-    const shadowFactor = 1 - shadowBoost * shadow * region;
+    const shadowFactor = 1 - shadowBoost * shadow * region * (variant === "v3" ? 1.2 : 1);
 
     let r = or * exposure * shadowFactor;
     let g = og * exposure * shadowFactor;
@@ -358,7 +359,7 @@ function applyLightingV2(src, out, brightness, toneSelectionValue, variant = "v2
     g = Math.pow(Math.max(g, 0), gamma);
     b = Math.pow(Math.max(b, 0), gamma);
 
-    const toneStrength = (variant === "v3" ? 0.22 : 0.16) * region;
+    const toneStrength = (variant === "v3" ? 0.26 : 0.2) * region;
     const rMul = 1 - 0.12 * tone * toneStrength;
     const gMul = 1 - 0.04 * tone * toneStrength;
     const bMul = 1 + 0.18 * tone * toneStrength;

@@ -31,12 +31,7 @@ body {
   position: relative;
 }
 
-.settings-btn {
-  position: absolute;
-  top: 20px;
-  right: 24px;
-  z-index: 6;
-}
+/* Settings button removed; use algo badge */
 
 .hero {
   display: flex;
@@ -271,6 +266,7 @@ canvas {
   padding: 4px 8px;
   border-radius: 999px;
   letter-spacing: 0.04em;
+  cursor: pointer;
 }
 
 .desktop-only {
@@ -495,35 +491,7 @@ canvas {
   justify-content: space-between;
 }
 
-.tone-segmented {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
-}
-
-.tone-btn {
-  border: 1px solid var(--border);
-  background: #f5f5f7;
-  color: var(--muted);
-  border-radius: 999px;
-  padding: 8px 10px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
-}
-
-.tone-btn.is-active {
-  background: var(--surface);
-  color: var(--ink);
-  border-color: #c7c7cc;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-}
-
-.tone-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
+/* Tone toggle styles removed */
 
 
 .control-row {
@@ -584,7 +552,13 @@ canvas {
   background: linear-gradient(90deg, #b8b8bd 0%, #f0f0f3 100%);
 }
 
-/* tone slider removed */
+#tone {
+  background: linear-gradient(90deg, #e08b61 0%, #ececec 50%, #84b6d6 100%);
+}
+
+#tone::-moz-range-track {
+  background: linear-gradient(90deg, #e08b61 0%, #ececec 50%, #84b6d6 100%);
+}
 
 .settings-modal {
   position: fixed;
@@ -707,14 +681,7 @@ canvas {
     overflow-x: hidden;
   }
 
-  .settings-btn {
-    top: 10px;
-    right: 10px;
-  }
-
-  .algo-badge {
-    display: none;
-  }
+  /* Keep algo badge visible on mobile */
 
   .main {
     padding-bottom: 0;
@@ -855,6 +822,13 @@ canvas {
     transition: max-height 0.25s ease, opacity 0.2s ease;
   }
 
+  .mc-slider-tone {
+    background: linear-gradient(90deg, #e08b61 0%, #ececec 50%, #84b6d6 100%) !important;
+  }
+
+  .mc-slider-tone::-moz-range-track {
+    background: linear-gradient(90deg, #e08b61 0%, #ececec 50%, #84b6d6 100%);
+  }
   .mobile-controls.is-collapsed .mobile-controls-inner {
     max-height: 0;
     opacity: 0;
@@ -929,18 +903,6 @@ canvas {
     height: 6px;
     border-radius: 999px;
     background: linear-gradient(90deg, #b8b8bd 0%, #f0f0f3 100%);
-  }
-
-  .mc-tone {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 6px;
-    margin-top: 6px;
-  }
-
-  .mc-tone-btn {
-    padding: 6px 8px;
-    font-size: 11px;
   }
 
   .control input[type="range"]::-webkit-slider-thumb {

@@ -4,13 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Room Lighting Visualizer</title>
-    <link rel="stylesheet" href="styles.css?v=20260206-13" />
+    <link rel="stylesheet" href="styles.css?v=20260207-01" />
   </head>
   <body>
     <div class="page">
-      <button id="settingsBtn" class="ghost ghost-small settings-btn" type="button">
-        Settings
-      </button>
       <header class="hero">
         <div class="hero-text">
           <h1>Light the room. See the mood.</h1>
@@ -46,7 +43,7 @@
               <div class="mobile-controls-inner">
                 <div class="mc-row">
                   <span class="mc-label">Brightness</span>
-                  <span class="mc-value" id="mcBrightnessValue">Bright</span>
+                  <span class="mc-value" id="mcBrightnessValue">Medium</span>
                 </div>
                 <input
                   type="range"
@@ -62,20 +59,28 @@
                   <span class="mc-label">Warmth</span>
                   <span class="mc-value" id="mcToneValue">Neutral</span>
                 </div>
-                <div class="mc-tone" role="group" aria-label="Warmth">
-                  <button class="tone-btn mc-tone-btn" type="button" data-tone="-1" aria-pressed="false" disabled>
-                    Warm
-                  </button>
-                  <button class="tone-btn mc-tone-btn is-active" type="button" data-tone="0" aria-pressed="true" disabled>
-                    Neutral
-                  </button>
-                  <button class="tone-btn mc-tone-btn" type="button" data-tone="1" aria-pressed="false" disabled>
-                    Cool
-                  </button>
-                </div>
+                <input
+                  type="range"
+                  id="mcTone"
+                  class="mc-slider mc-slider-tone"
+                  min="-100"
+                  max="100"
+                  value="0"
+                  step="1"
+                  disabled
+                />
               </div>
             </div>
-            <div id="algoBadge" class="algo-badge">Algo v1.0</div>
+            <div
+              id="algoBadge"
+              class="algo-badge"
+              role="button"
+              tabindex="0"
+              aria-haspopup="dialog"
+              aria-label="Open settings"
+            >
+              Algo v1.0
+            </div>
           </div>
           <div id="sampleBanner" class="sample-banner" style="display:none">
             <span>📷 Sample photo ·&nbsp;</span>
@@ -135,9 +140,11 @@
                   step="1"
                   disabled
                 />
-                <div class="ticks ticks-ends">
+                <div class="ticks">
+                  <span>Very Dim</span>
+                  <span>Dim</span>
+                  <span>Medium</span>
                   <span>Bright</span>
-                  <span>Soft / Cozy</span>
                 </div>
               </div>
 
@@ -147,16 +154,19 @@
                   <span class="control-value" id="toneValue">Neutral</span>
                 </label>
                 <p class="control-hint is-hidden" id="toneHint">Now try warmth.</p>
-                <div class="tone-segmented" role="group" aria-label="Warmth">
-                  <button class="tone-btn" type="button" data-tone="-1" aria-pressed="false" disabled>
-                    Warm
-                  </button>
-                  <button class="tone-btn is-active" type="button" data-tone="0" aria-pressed="true" disabled>
-                    Neutral
-                  </button>
-                  <button class="tone-btn" type="button" data-tone="1" aria-pressed="false" disabled>
-                    Cool
-                  </button>
+                <input
+                  type="range"
+                  id="tone"
+                  min="-100"
+                  max="100"
+                  value="0"
+                  step="1"
+                  disabled
+                />
+                <div class="ticks">
+                  <span>Warm</span>
+                  <span>Neutral</span>
+                  <span>Cool</span>
                 </div>
               </div>
 
@@ -189,20 +199,13 @@
             <input type="radio" name="algoVersion" value="v2" />
             <div>
               <strong>v2.0 — Daylight-aware relighting</strong>
-              <p>Separates bright daylight regions from interior lighting to avoid warm windows.</p>
-            </div>
-          </label>
-          <label class="settings-option">
-            <input type="radio" name="algoVersion" value="v3" />
-            <div>
-              <strong>v3.0 — Experimental</strong>
-              <p>Stronger interior emphasis with more shadow depth (prototype).</p>
+              <p>Separates bright daylight from interior lighting to avoid warm windows.</p>
             </div>
           </label>
         </div>
       </div>
     </div>
 
-    <script src="app.js?v=20260206-13"></script>
+    <script src="app.js?v=20260207-01"></script>
   </body>
 </html>

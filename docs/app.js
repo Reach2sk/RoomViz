@@ -5,6 +5,7 @@ const uploadBtn = document.getElementById("uploadBtn");
 const sampleBtn = document.getElementById("sampleBtn");
 const replaceBtn = document.getElementById("replaceBtn");
 const brightnessSlider = document.getElementById("brightness");
+const toneSlider = document.getElementById("tone");
 const viewAdjustedBtn = document.getElementById("viewAdjusted");
 const viewOriginalBtn = document.getElementById("viewOriginal");
 const viewToggleBtn = document.getElementById("viewToggleBtn");
@@ -21,7 +22,6 @@ const stage = document.getElementById("stage");
 const loadingOverlay = document.getElementById("loadingOverlay");
 const controlsPanel = document.getElementById("controlsPanel");
 const sheetToggle = document.getElementById("sheetToggle");
-const settingsBtn = document.getElementById("settingsBtn");
 const settingsModal = document.getElementById("settingsModal");
 const settingsBackdrop = document.getElementById("settingsBackdrop");
 const settingsClose = document.getElementById("settingsClose");
@@ -33,6 +33,7 @@ const mobileControls = document.getElementById("mobileControls");
 const mcToggle = document.getElementById("mcToggle");
 const mcBrightness = document.getElementById("mcBrightness");
 const mcBrightnessValue = document.getElementById("mcBrightnessValue");
+const mcTone = document.getElementById("mcTone");
 const mcToneValue = document.getElementById("mcToneValue");
 
 const MOBILE_MEDIA = window.matchMedia("(max-width: 640px), (pointer: coarse)");
@@ -45,7 +46,6 @@ const MC_AUTO_MS = 2600;
 
 const brightnessControl = document.getElementById("brightnessControl");
 const toneControl = document.getElementById("toneControl");
-const toneButtons = Array.from(document.querySelectorAll(".tone-btn"));
 
 const ctx = canvas.getContext("2d", { willReadFrequently: true });
 
@@ -56,7 +56,6 @@ const DEFAULT_BRIGHTNESS = 70;
 const DEFAULT_TONE = 0;
 let adjustedBrightness = DEFAULT_BRIGHTNESS;
 let adjustedTone = DEFAULT_TONE;
-let toneSelection = DEFAULT_TONE;
 let toneUnlocked = false;
 let isSamplePhoto = false;
 let rafPending = false;
@@ -67,7 +66,7 @@ const MAX_WIDTH = 1200;
 const MAX_HEIGHT = 800;
 const ALGO_KEY = "roomviz_algo_version";
 const DEFAULT_ALGO = "v1";
-let currentAlgo = localStorage.getItem(ALGO_KEY) || DEFAULT_ALGO;
+let currentAlgo = DEFAULT_ALGO;
 
 function lerp(min, max, t) {
   return min + (max - min) * t;
@@ -84,6 +83,7 @@ function smoothstep(edge0, edge1, x) {
 
 function setControlsEnabled(enabled) {
   brightnessSlider.disabled = !enabled;
+  toneSlider.disabled = !enabled || !toneUnlocked;
   replaceBtn.disabled = !enabled;
   viewAdjustedBtn.disabled = !enabled;
   viewOriginalBtn.disabled = !enabled;
@@ -92,18 +92,17 @@ function setControlsEnabled(enabled) {
 
   // Mobile controls
   if (mcBrightness) mcBrightness.disabled = !enabled;
+  if (mcTone) mcTone.disabled = !enabled || !toneUnlocked;
   if (mcToggle) mcToggle.disabled = !enabled;
 
   brightnessControl.dataset.disabled = enabled ? "false" : "true";
   toneControl.dataset.disabled = enabled && toneUnlocked ? "false" : "true";
-  toneButtons.forEach((button) => {
-    button.disabled = !enabled || !toneUnlocked;
-  });
   if (!enabled) {
     setScrollHint(false);
-    toneSelection = DEFAULT_TONE;
     toneUnlocked = false;
-    updateToneUI();
+    toneSlider.value = String(DEFAULT_TONE);
+    if (mcTone) mcTone.value = String(DEFAULT_TONE);
+    updateSliderLabels();
     if (toneHint) toneHint.classList.add("is-hidden");
     if (brightnessHint) brightnessHint.classList.remove("is-hidden");
     setMobileControls(false);
@@ -128,13 +127,16 @@ function updateBeforeAfterUI() {
 
 function updateSliderLabels() {
   const brightness = Number(brightnessSlider.value);
-  let brightnessLabel = "Bright";
-  if (brightness < 40) brightnessLabel = "Soft / Cozy";
-  else if (brightness < 70) brightnessLabel = "Balanced";
+  let brightnessLabel = "Medium";
+  if (brightness <= 20) brightnessLabel = "Very Dim";
+  else if (brightness <= 45) brightnessLabel = "Dim";
+  else if (brightness <= 75) brightnessLabel = "Medium";
+  else brightnessLabel = "Bright";
 
+  const tone = Number(toneSlider.value);
   let toneLabel = "Neutral";
-  if (toneSelection < 0) toneLabel = "Warm";
-  if (toneSelection > 0) toneLabel = "Cool";
+  if (tone < -35) toneLabel = "Warm";
+  if (tone > 35) toneLabel = "Cool";
 
   brightnessValue.textContent = brightnessLabel;
   toneValue.textContent = toneLabel;
@@ -144,22 +146,14 @@ function updateSliderLabels() {
   if (mcToneValue) mcToneValue.textContent = toneLabel;
 }
 
-function updateToneUI() {
-  toneButtons.forEach((button) => {
-    const value = Number(button.dataset.tone);
-    const isActive = value === toneSelection;
-    button.classList.toggle("is-active", isActive);
-    button.setAttribute("aria-pressed", isActive ? "true" : "false");
-  });
-  updateSliderLabels();
-}
-
-/** Keep brightness sliders in sync */
-function syncBrightness(source) {
+/** Keep both slider sets in sync */
+function syncSliders(source) {
   if (source === "desktop") {
     if (mcBrightness) mcBrightness.value = brightnessSlider.value;
+    if (mcTone) mcTone.value = toneSlider.value;
   } else {
     brightnessSlider.value = mcBrightness ? mcBrightness.value : brightnessSlider.value;
+    toneSlider.value = mcTone ? mcTone.value : toneSlider.value;
   }
 }
 
@@ -176,9 +170,8 @@ function unlockTone() {
   if (toneUnlocked) return;
   toneUnlocked = true;
   toneControl.dataset.disabled = "false";
-  toneButtons.forEach((button) => {
-    button.disabled = false;
-  });
+  toneSlider.disabled = false;
+  if (mcTone) mcTone.disabled = false;
   if (toneHint) toneHint.classList.remove("is-hidden");
   if (brightnessHint) brightnessHint.classList.add("is-hidden");
 }
@@ -186,11 +179,11 @@ function unlockTone() {
 const ALGO_LABELS = {
   v1: "v1.0",
   v2: "v2.0",
-  v3: "v3.0",
 };
 
 function getAlgoVersion() {
-  return currentAlgo;
+  const stored = localStorage.getItem(ALGO_KEY);
+  return ALGO_LABELS[stored] ? stored : DEFAULT_ALGO;
 }
 
 function setAlgoVersion(version, persist = true) {
@@ -404,7 +397,7 @@ function render() {
   }
 
   const brightness = Number(brightnessSlider.value) / 100;
-  const tone = toneSelection;
+  const tone = Number(toneSlider.value) / 100;
 
   const src = originalImageData.data;
   const out = outputImageData.data;
@@ -432,12 +425,13 @@ function resetControls() {
   adjustedBrightness = DEFAULT_BRIGHTNESS;
   adjustedTone = DEFAULT_TONE;
   brightnessSlider.value = String(DEFAULT_BRIGHTNESS);
+  toneSlider.value = String(DEFAULT_TONE);
   if (mcBrightness) mcBrightness.value = String(DEFAULT_BRIGHTNESS);
-  toneSelection = DEFAULT_TONE;
+  if (mcTone) mcTone.value = String(DEFAULT_TONE);
   toneUnlocked = false;
   showOriginal = false;
   updateBeforeAfterUI();
-  updateToneUI();
+  updateSliderLabels();
   if (toneHint) toneHint.classList.add("is-hidden");
   if (brightnessHint) brightnessHint.classList.remove("is-hidden");
   scheduleRender();
@@ -579,7 +573,7 @@ function handleBrightnessChange(source) {
   scheduleAutoCollapse();
   scheduleMobileCollapse();
 
-  syncBrightness(source);
+  syncSliders(source);
 
   const brightness = Number(brightnessSlider.value);
   adjustedBrightness = brightness;
@@ -605,35 +599,31 @@ function handleToneChange(source) {
   scheduleAutoCollapse();
   scheduleMobileCollapse();
 
-  const selected = Number(source);
-  if (Number.isNaN(selected)) return;
-  toneSelection = selected;
-  adjustedTone = toneSelection;
-  updateToneUI();
+  syncSliders(source);
+  adjustedTone = Number(toneSlider.value);
+  updateSliderLabels();
   if (toneHint) toneHint.classList.add("is-hidden");
   scheduleRender();
 }
 
 // Desktop slider listeners
 brightnessSlider.addEventListener("input", () => handleBrightnessChange("desktop"));
+toneSlider.addEventListener("input", () => handleToneChange("desktop"));
 
 // Mobile overlay slider listeners
 if (mcBrightness) {
   mcBrightness.addEventListener("input", () => handleBrightnessChange("mobile"));
 }
-toneButtons.forEach((button) => {
-  button.addEventListener("click", () => {
-    if (button.disabled) return;
-    handleToneChange(button.dataset.tone);
-  });
-});
+if (mcTone) {
+  mcTone.addEventListener("input", () => handleToneChange("mobile"));
+}
 
 viewAdjustedBtn.addEventListener("click", () => {
   showOriginal = false;
   brightnessSlider.value = String(adjustedBrightness);
-  syncBrightness("desktop");
-  toneSelection = adjustedTone;
-  updateToneUI();
+  toneSlider.value = String(adjustedTone);
+  syncSliders("desktop");
+  updateSliderLabels();
   updateBeforeAfterUI();
   scheduleRender();
 });
@@ -641,13 +631,13 @@ viewAdjustedBtn.addEventListener("click", () => {
 viewOriginalBtn.addEventListener("click", () => {
   if (!showOriginal) {
     adjustedBrightness = Number(brightnessSlider.value);
-    adjustedTone = toneSelection;
+    adjustedTone = Number(toneSlider.value);
   }
   showOriginal = true;
   brightnessSlider.value = String(DEFAULT_BRIGHTNESS);
-  toneSelection = DEFAULT_TONE;
-  syncBrightness("desktop");
-  updateToneUI();
+  toneSlider.value = String(DEFAULT_TONE);
+  syncSliders("desktop");
+  updateSliderLabels();
   updateBeforeAfterUI();
   scheduleRender();
 });
@@ -662,23 +652,33 @@ if (viewToggleBtn) {
   });
 }
 
-if (settingsBtn && settingsModal) {
-  const openSettings = () => {
-    settingsModal.classList.add("is-open");
-    settingsModal.setAttribute("aria-hidden", "false");
-  };
-  const closeSettings = () => {
-    settingsModal.classList.remove("is-open");
-    settingsModal.setAttribute("aria-hidden", "true");
-  };
+const openSettings = () => {
+  if (!settingsModal) return;
+  settingsModal.classList.add("is-open");
+  settingsModal.setAttribute("aria-hidden", "false");
+};
 
-  settingsBtn.addEventListener("click", openSettings);
-  if (settingsBackdrop) settingsBackdrop.addEventListener("click", closeSettings);
-  if (settingsClose) settingsClose.addEventListener("click", closeSettings);
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") closeSettings();
+const closeSettings = () => {
+  if (!settingsModal) return;
+  settingsModal.classList.remove("is-open");
+  settingsModal.setAttribute("aria-hidden", "true");
+};
+
+if (algoBadge) {
+  algoBadge.addEventListener("click", openSettings);
+  algoBadge.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      openSettings();
+    }
   });
 }
+
+if (settingsBackdrop) settingsBackdrop.addEventListener("click", closeSettings);
+if (settingsClose) settingsClose.addEventListener("click", closeSettings);
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") closeSettings();
+});
 
 algoRadios.forEach((radio) => {
   radio.addEventListener("change", () => {
@@ -737,7 +737,7 @@ if (MOBILE_MEDIA.addEventListener) {
 });
 
 updateBeforeAfterUI();
-updateToneUI();
+updateSliderLabels();
 setAlgoVersion(getAlgoVersion(), false);
 initSheetState();
 setMobileControls(false);

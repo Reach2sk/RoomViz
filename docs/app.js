@@ -1,4 +1,4 @@
-const APP_VERSION = "2.2";
+const APP_VERSION = "2.3";
 
 const fileInput = document.getElementById("fileInput");
 const uploadBtn = document.getElementById("uploadBtn");
@@ -63,11 +63,13 @@ let rafPending = false;
 const MAX_WIDTH = 1200;
 const MAX_HEIGHT = 800;
 const ALGO_KEY = "roomviz_algo_version";
+const CONTROLS_USED_KEY = "roomviz_controls_used";
 const DEFAULT_ALGO = "v20";
 let currentAlgo = DEFAULT_ALGO;
 let lastRenderedAlgo = null;
 let daylightMask = null;
 let midtoneMask = null;
+let hasUsedControls = false;
 
 function lerp(min, max, t) {
   return min + (max - min) * t;
@@ -197,6 +199,28 @@ function setControlsEnabled(enabled) {
     if (brightnessHint) brightnessHint.classList.remove("is-hidden");
     setMobileControls(false);
   }
+  refreshNudge();
+}
+
+function markControlsUsed() {
+  if (hasUsedControls) return;
+  hasUsedControls = true;
+  localStorage.setItem(CONTROLS_USED_KEY, "1");
+  if (mcToggle) mcToggle.classList.remove("is-nudging");
+}
+
+function refreshNudge() {
+  if (!mcToggle) return;
+  if (hasUsedControls || !MOBILE_MEDIA.matches) {
+    mcToggle.classList.remove("is-nudging");
+    return;
+  }
+  if (mcToggle.disabled) return;
+  if (!mcExpanded) {
+    mcToggle.classList.add("is-nudging");
+  } else {
+    mcToggle.classList.remove("is-nudging");
+  }
 }
 
 function updateBeforeAfterUI() {
@@ -324,6 +348,7 @@ function setMobileControls(expanded) {
   mcExpanded = expanded;
   mobileControls.classList.toggle("is-expanded", expanded);
   mobileControls.classList.toggle("is-collapsed", !expanded);
+  refreshNudge();
   if (mcAutoTimer) {
     window.clearTimeout(mcAutoTimer);
     mcAutoTimer = null;
@@ -811,6 +836,7 @@ function handleBrightnessChange(source) {
     showOriginal = false;
     updateBeforeAfterUI();
   }
+  markControlsUsed();
   setScrollHint(false);
   hideSampleBanner();
   scheduleAutoCollapse();
@@ -829,6 +855,7 @@ function handleToneChange(source) {
     showOriginal = false;
     updateBeforeAfterUI();
   }
+  markControlsUsed();
   hideSampleBanner();
   scheduleAutoCollapse();
   scheduleMobileCollapse();
@@ -943,6 +970,7 @@ if (mcToggle) {
   mcToggle.addEventListener("click", () => {
     if (!MOBILE_MEDIA.matches) return;
     setMobileControls(!mcExpanded);
+    if (mcExpanded) markControlsUsed();
   });
 }
 
@@ -974,6 +1002,7 @@ if (MOBILE_MEDIA.addEventListener) {
 updateBeforeAfterUI();
 updateSliderLabels();
 initAlgoVersion();
+hasUsedControls = localStorage.getItem(CONTROLS_USED_KEY) === "1";
 initSheetState();
 setMobileControls(false);
 

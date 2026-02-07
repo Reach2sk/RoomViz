@@ -857,14 +857,6 @@ canvas {
     opacity: 0.5;
   }
 
-  .mc-handle {
-    display: inline-block;
-    width: 20px;
-    height: 3px;
-    border-radius: 999px;
-    background: rgba(0, 0, 0, 0.2);
-  }
-
   .mc-chevron {
     width: 8px;
     height: 8px;
@@ -872,6 +864,22 @@ canvas {
     border-bottom: 2px solid rgba(0, 0, 0, 0.45);
     transform: rotate(-135deg);
     transition: transform 0.2s ease;
+  }
+
+  @keyframes nudge {
+    0%,
+    100% {
+      transform: translateY(0) rotate(-135deg);
+      opacity: 0.6;
+    }
+    50% {
+      transform: translateY(-3px) rotate(-135deg);
+      opacity: 1;
+    }
+  }
+
+  .mc-toggle.is-nudging .mc-chevron {
+    animation: nudge 1.6s ease-in-out infinite;
   }
 
   .mobile-controls.is-expanded .mc-chevron {

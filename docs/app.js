@@ -180,12 +180,7 @@ function getAlgoVersion() {
 }
 
 function initAlgoVersion() {
-  const stored = localStorage.getItem(ALGO_KEY);
-  if (!stored || !ALGO_LABELS[stored]) {
-    setAlgoVersion(DEFAULT_ALGO, true);
-  } else {
-    setAlgoVersion(stored, false);
-  }
+  setAlgoVersion(DEFAULT_ALGO, true);
 }
 
 function setAlgoVersion(version, persist = true) {

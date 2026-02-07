@@ -321,7 +321,6 @@ function rebuildLightInfluence(width, height) {
   }
 
   lightInfluence = { spill: influence, core };
-  }
 }
 
 function setControlsEnabled(enabled) {

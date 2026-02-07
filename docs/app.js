@@ -287,7 +287,9 @@ function rebuildLightInfluence(width, height) {
     lightInfluence = null;
     return;
   }
+
   const influence = new Float32Array(width * height);
+  const core = new Float32Array(width * height);
   for (let i = 0; i < influence.length; i++) influence[i] = 0;
 
   for (const light of lightPoints) {
@@ -313,11 +315,13 @@ function rebuildLightInfluence(width, height) {
         const weight = clamp(source * 0.85 + spill * 0.55, 0, 1) * strength;
         const idx = y * width + x;
         influence[idx] = clamp(influence[idx] + weight, 0, 1);
+        core[idx] = Math.max(core[idx], source * strength);
       }
     }
   }
 
-  lightInfluence = influence;
+  lightInfluence = { spill: influence, core };
+  }
 }
 
 function setControlsEnabled(enabled) {
@@ -686,7 +690,7 @@ function applyLightingV2X(src, out, brightness, toneSelectionValue, width, heigh
   const gamma = lerp(1.25, 1.0, brightness);
 
   const baseTone = toneSelectionValue * 0.7;
-  const ambient = 0.18;
+  const ambient = 0.22;
 
   for (let i = 0; i < src.length; i += 4) {
     const index = i / 4;
@@ -694,12 +698,17 @@ function applyLightingV2X(src, out, brightness, toneSelectionValue, width, heigh
     const og = src[i + 1] / 255;
     const ob = src[i + 2] / 255;
 
-    const mid = midtoneMask ? midtoneMask[index] : midtoneWeight(0.2126 * or + 0.7152 * og + 0.0722 * ob);
+    const luma = 0.2126 * or + 0.7152 * og + 0.0722 * ob;
+    const mid = midtoneMask ? midtoneMask[index] : midtoneWeight(luma);
     const daylight = daylightMask ? daylightMask[index] : 0;
-    const influence = lightInfluence ? lightInfluence[index] : 0;
+    const spill = lightInfluence ? lightInfluence.spill[index] : 0;
+    const core = lightInfluence ? lightInfluence.core[index] : 0;
 
-    const toneScale = clamp(ambient + (1 - ambient) * influence, 0, 1);
-    const tone = baseTone * mid * toneScale * (1 - daylight * 0.85);
+    const toneScale = clamp(ambient + (1 - ambient) * spill, 0, 1);
+    const coreScale = clamp(0.6 + 0.7 * core, 0, 1.2);
+    const baseMask = mid * toneScale * (1 - daylight * 0.85);
+    const coreMask = clamp(coreScale * (1 - daylight * 0.4), 0, 1.2);
+    const tone = baseTone * (baseMask + coreMask * 0.45);
 
     const rMul = 1 - 0.07 * tone;
     const gMul = 1 - 0.02 * tone;
@@ -721,7 +730,6 @@ function applyLightingV2X(src, out, brightness, toneSelectionValue, width, heigh
     g = Math.pow(Math.max(g, 0), gamma);
     b = Math.pow(Math.max(b, 0), gamma);
 
-    const luma = 0.2126 * or + 0.7152 * og + 0.0722 * ob;
     const protect = smoothstep(0.75, 0.95, luma);
     r = r * (1 - protect) + or * protect;
     g = g * (1 - protect) + og * protect;
@@ -911,7 +919,6 @@ function applyImageSource(imageSource) {
   hasShownAha = false;
   setControlsEnabled(true);
   resetControls();
-  lightPoints = detectLightSources(originalImageData.data, targetWidth, targetHeight);
   daylightMask = computeDaylightMask(originalImageData.data, targetWidth, targetHeight);
   midtoneMask = buildMidtoneMask(originalImageData.data, targetWidth, targetHeight);
   rebuildLightInfluence(targetWidth, targetHeight);
@@ -1160,19 +1167,23 @@ if (lightOverlay) {
     const y = (event.clientY - rect.top) / rect.height;
 
     let index = -1;
+    let wasNew = false;
     if (target instanceof HTMLElement && target.classList.contains("light-dot")) {
       index = Number(target.dataset.index);
     } else {
       lightPoints.push({
         x: clamp(x, 0.02, 0.98),
         y: clamp(y, 0.02, 0.98),
-        strength: 0.75,
-        sourceRadius: 0.03,
-        spillRadius: 0.09,
+        strength: 0.8,
+        sourceRadius: 0.035,
+        spillRadius: 0.11,
         detected: false,
       });
       index = lightPoints.length - 1;
+      wasNew = true;
+      rebuildLightInfluence(canvas.width, canvas.height);
       updateLightOverlay();
+      scheduleRender();
     }
 
     activeDrag = {
@@ -1180,7 +1191,7 @@ if (lightOverlay) {
       startX: x,
       startY: y,
       moved: false,
-      wasNew: !target.classList?.contains("light-dot"),
+      wasNew,
       targetWasDot: target.classList?.contains("light-dot"),
     };
     lightOverlay.setPointerCapture(event.pointerId);

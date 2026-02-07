@@ -256,20 +256,42 @@ canvas {
   font-size: 11px;
 }
 
+.photo-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 10px 0 0;
+}
+
+.photo-actions-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.photo-status {
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 .algo-badge {
-  position: absolute;
-  right: 12px;
-  bottom: 12px;
-  background: rgba(0, 0, 0, 0.65);
+  background: rgba(0, 0, 0, 0.7);
   color: #fff;
   font-size: 10px;
-  padding: 4px 8px;
+  padding: 6px 10px;
   border-radius: 999px;
   letter-spacing: 0.04em;
   cursor: pointer;
-  z-index: 6;
-  pointer-events: auto;
+  border: none;
   user-select: none;
+}
+
+.algo-badge:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .desktop-only {
@@ -710,11 +732,18 @@ canvas {
     overflow-x: hidden;
   }
 
-  /* Keep algo badge visible on mobile, aligned with Adjust lighting bar */
-  .algo-badge {
-    bottom: 72px;
-    font-size: 11px;
-    padding: 6px 10px;
+  .photo-actions {
+    margin-top: 8px;
+    gap: 8px;
+  }
+
+  .photo-actions-left {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .photo-status {
+    display: none;
   }
 
   .main {

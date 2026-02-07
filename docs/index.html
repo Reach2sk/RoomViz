@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Room Lighting Visualizer</title>
-    <link rel="stylesheet" href="styles.css?v=20260207-10" />
+    <link rel="stylesheet" href="styles.css?v=20260207-12" />
   </head>
   <body>
     <div class="page">
@@ -19,7 +19,7 @@
           <div class="canvas-wrap" id="canvasWrap">
             <canvas id="roomCanvas" width="960" height="640"></canvas>
             <div class="stage-overlay">
-              <div class="segmented desktop-only" role="tablist" aria-label="View mode">
+              <div class="segmented" role="tablist" aria-label="View mode">
                 <button id="viewAdjusted" class="segmented-btn is-active" aria-selected="true" disabled>
                   Adjusted
                 </button>
@@ -27,10 +27,6 @@
                   Original
                 </button>
               </div>
-              <button id="viewToggleBtn" class="ghost ghost-small mobile-only" disabled>
-                Original
-              </button>
-              <button id="replaceBtn" class="ghost ghost-small" disabled>Change</button>
             </div>
 
             <!-- Mobile overlay controls (inside canvas-wrap, over the image) -->
@@ -71,20 +67,21 @@
                 />
               </div>
             </div>
-            <div
+          </div>
+          <div id="photoActions" class="photo-actions" style="display:none">
+            <div class="photo-actions-left">
+              <span id="photoStatus" class="photo-status" aria-hidden="true">Sample photo</span>
+              <button id="replaceBtn" class="ghost ghost-small" disabled>Change photo</button>
+            </div>
+            <button
               id="algoBadge"
               class="algo-badge"
-              role="button"
-              tabindex="0"
+              type="button"
               aria-haspopup="dialog"
               aria-label="Open settings"
             >
               Algo v1.0
-            </div>
-          </div>
-          <div id="sampleBanner" class="sample-banner" style="display:none">
-            <span>📷 Sample photo ·&nbsp;</span>
-            <button id="uploadOwnBtn" class="sample-banner-btn" type="button">Upload your own room</button>
+            </button>
           </div>
           <p class="disclaimer mobile-only mobile-disclaimer">
             Visual guide only. Real rooms vary by fixture, finish, and daylight.
@@ -219,6 +216,6 @@
       </div>
     </div>
 
-    <script src="app.js?v=20260207-10"></script>
+    <script src="app.js?v=20260207-12"></script>
   </body>
 </html>

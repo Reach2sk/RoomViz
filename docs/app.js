@@ -22,6 +22,8 @@ const stage = document.getElementById("stage");
 const loadingOverlay = document.getElementById("loadingOverlay");
 const controlsPanel = document.getElementById("controlsPanel");
 const sheetToggle = document.getElementById("sheetToggle");
+const photoActions = document.getElementById("photoActions");
+const photoStatus = document.getElementById("photoStatus");
 const settingsModal = document.getElementById("settingsModal");
 const settingsBackdrop = document.getElementById("settingsBackdrop");
 const settingsClose = document.getElementById("settingsClose");
@@ -410,6 +412,8 @@ function render() {
   const algo = currentAlgo;
   if (algo === "v2") {
     applyLightingV2(src, out, brightness, tone);
+  } else if (algo === "v3") {
+    applyLightingV3(src, out, brightness, tone);
   } else {
     applyLightingV1(src, out, brightness, tone);
   }
@@ -428,6 +432,17 @@ function hideSampleBanner() {
   const banner = document.getElementById("sampleBanner");
   if (banner && banner.style.display !== "none") {
     banner.style.display = "none";
+  }
+}
+
+function updatePhotoActions() {
+  if (!photoActions) return;
+  photoActions.style.display = originalImageData ? "flex" : "none";
+  if (photoStatus) {
+    photoStatus.style.display = isSamplePhoto ? "inline-flex" : "none";
+  }
+  if (replaceBtn) {
+    replaceBtn.textContent = isSamplePhoto ? "Upload your own photo" : "Change photo";
   }
 }
 
@@ -468,11 +483,7 @@ function applyImageSource(imageSource) {
   setScrollHint(true);
   initSheetState();
   setMobileControls(false);
-
-  const banner = document.getElementById("sampleBanner");
-  if (banner) {
-    banner.style.display = isSamplePhoto ? "flex" : "none";
-  }
+  updatePhotoActions();
 }
 
 async function loadImage(file) {

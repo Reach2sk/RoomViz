@@ -567,7 +567,10 @@ canvas {
 
 .mobile-disclaimer {
   text-align: center;
-  padding: 8px 16px 4px;
+  padding: 14px 16px 6px;
+  margin-top: 10px;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  color: rgba(0, 0, 0, 0.55);
 }
 
 .build-version {
@@ -1016,9 +1019,14 @@ canvas {
     text-align: center;
   }
 
-  .has-photo .hero .subhead,
   .has-photo .hero .eyebrow {
     display: none;
+  }
+
+  .has-photo .hero .subhead {
+    display: block;
+    font-size: 13px;
+    max-width: 320px;
   }
 
   .has-photo .page {

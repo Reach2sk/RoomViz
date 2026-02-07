@@ -105,7 +105,6 @@ function setControlsEnabled(enabled) {
     toneSlider.value = String(DEFAULT_TONE);
     if (mcTone) mcTone.value = String(DEFAULT_TONE);
     updateSliderLabels();
-    if (toneHint) toneHint.classList.add("is-hidden");
     if (brightnessHint) brightnessHint.classList.remove("is-hidden");
     setMobileControls(false);
   }
@@ -451,7 +450,6 @@ function resetControls() {
   showOriginal = false;
   updateBeforeAfterUI();
   updateSliderLabels();
-  if (toneHint) toneHint.classList.add("is-hidden");
   if (brightnessHint) brightnessHint.classList.remove("is-hidden");
   scheduleRender();
 }
@@ -612,7 +610,6 @@ function handleToneChange(source) {
   adjustedBrightness = Number(brightnessSlider.value);
   adjustedTone = Number(toneSlider.value);
   updateSliderLabels();
-  if (toneHint) toneHint.classList.add("is-hidden");
   scheduleRender();
 }
 

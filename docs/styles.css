@@ -66,6 +66,10 @@ body {
   margin: 0;
 }
 
+.subhead + .subhead {
+  margin-top: 6px;
+}
+
 .main {
   display: grid;
   grid-template-columns: minmax(0, 1.6fr) minmax(280px, 0.55fr);

@@ -4,13 +4,15 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Room Lighting Visualizer</title>
-    <link rel="stylesheet" href="styles.css?v=20260207-13" />
+    <link rel="stylesheet" href="styles.css?v=20260207-14" />
   </head>
   <body>
     <div class="page">
       <header class="hero">
         <div class="hero-text">
           <h1>Light the room. See the mood.</h1>
+          <p class="subhead">See how dimming and light tone change the feeling of the same room</p>
+          <p class="subhead subhead-secondary">Start with brightness. Then adjust warmth.</p>
         </div>
       </header>
 
@@ -123,8 +125,6 @@
             <div class="sheet-body">
               <div class="card-header">
                 <h2>Lighting controls</h2>
-                <p class="card-subtitle">See how dimming and light tone change the feeling of the same room</p>
-                <p>Start with brightness. Then adjust warmth.</p>
               </div>
 
               <div class="control" data-disabled="true" id="brightnessControl">
@@ -155,7 +155,7 @@
                   Warmth
                   <span class="control-value" id="toneValue">Neutral</span>
                 </label>
-                <p class="control-hint is-hidden" id="toneHint">Same brightness, different mood.</p>
+                <p class="control-hint" id="toneHint">Same brightness, different mood.</p>
                 <input
                   type="range"
                   id="tone"
@@ -217,6 +217,6 @@
       </div>
     </div>
 
-    <script src="app.js?v=20260207-13"></script>
+    <script src="app.js?v=20260207-14"></script>
   </body>
 </html>

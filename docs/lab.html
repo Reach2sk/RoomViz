@@ -4,15 +4,15 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>RoomViz Lab</title>
-    <link rel="stylesheet" href="styles.css?v=20260209-38" />
-    <link rel="stylesheet" href="lab.css?v=20260209-38" />
+    <link rel="stylesheet" href="styles.css?v=20260209-39" />
+    <link rel="stylesheet" href="lab.css?v=20260209-39" />
   </head>
   <body>
     <div class="page lab">
       <header class="hero">
         <div class="hero-text">
           <h1>Light the room. See the mood.</h1>
-          <p class="subhead">Compare what “standard” vs “deep dimming” feels like — without numbers.</p>
+          <p class="subhead">See how dimming and light tone change the feeling of the same room</p>
         </div>
       </header>
 
@@ -51,7 +51,7 @@
 
                 <div class="mc-row">
                   <span class="mc-label">Brightness</span>
-                  <span class="mc-value" id="mcBrightnessState">Harsh</span>
+                  <span class="mc-value" id="mcBrightnessState">Bright</span>
                 </div>
                 <input
                   type="range"
@@ -77,7 +77,7 @@
                 <input
                   type="range"
                   id="mcWarmth"
-                  class="mc-slider mc-slider-warmth"
+                  class="mc-slider mc-slider-tone mc-slider-warmth"
                   min="-100"
                   max="100"
                   value="0"
@@ -159,7 +159,7 @@
               <div class="control" id="brightnessControl">
                 <label for="brightness">
                   Brightness
-                  <span class="control-value" id="brightnessState">Harsh</span>
+                  <span class="control-value" id="brightnessState">Bright</span>
                 </label>
                 <input type="range" id="brightness" min="0" max="100" value="80" step="1" disabled />
                 <div class="lab-ticks">
@@ -175,7 +175,7 @@
                   Warmth
                   <span class="control-value" id="warmthValue">Neutral</span>
                 </label>
-                <input type="range" id="warmth" min="-100" max="100" value="0" step="1" disabled />
+                <input type="range" id="warmth" class="lab-tone-slider" min="-100" max="100" value="0" step="1" disabled />
                 <div class="lab-ticks lab-ticks-warmth">
                   <span>Warm</span>
                   <span>Neutral</span>
@@ -202,6 +202,6 @@
       </main>
     </div>
 
-    <script src="lab.js?v=20260209-38"></script>
+    <script src="lab.js?v=20260209-39"></script>
   </body>
 </html>

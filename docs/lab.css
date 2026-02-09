@@ -39,6 +39,14 @@
   margin-top: 4px;
 }
 
+.lab-tone-slider {
+  background: linear-gradient(90deg, #e08b61 0%, #ececec 50%, #84b6d6 100%) !important;
+}
+
+.lab-tone-slider::-moz-range-track {
+  background: linear-gradient(90deg, #e08b61 0%, #ececec 50%, #84b6d6 100%);
+}
+
 .lab-inline {
   margin: 8px 0 0;
   font-size: 12px;

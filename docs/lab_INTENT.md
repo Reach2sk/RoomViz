@@ -54,7 +54,7 @@ Behavior:
   - `Some lights can’t dim lower than this.`
 
 Also show a small status label (no numbers):
-- `Harsh` / `Comfortable` / `Night-friendly`
+- `Bright` / `Comfortable` / `Night-friendly`
 
 ### 3) Warmth control (continuous slider)
 One horizontal slider:

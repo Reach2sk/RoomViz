@@ -1,4 +1,4 @@
-const LAB_BUILD = "20260209-38";
+const LAB_BUILD = "20260209-39";
 
 const fileInput = document.getElementById("fileInput");
 const uploadBtn = document.getElementById("uploadBtn");
@@ -81,6 +81,7 @@ let capability = "standard";
 let brightnessUi = DEFAULT_BRIGHTNESS;
 let warmthUi = DEFAULT_WARMTH;
 let dimToWarm = false;
+let savedAdjusted = null;
 
 let hasUsedControls = false;
 let rafPending = false;
@@ -221,7 +222,7 @@ function updateBeforeAfterUI() {
 function comfortState(outputLevel) {
   if (outputLevel <= 0.02) return "Night-friendly";
   if (outputLevel <= 0.10) return "Comfortable";
-  return "Harsh";
+  return "Bright";
 }
 
 function effectiveOutput(uiValue) {
@@ -388,6 +389,62 @@ function render() {
   ctx.putImageData(outputImageData, 0, 0);
 }
 
+function setViewOriginal(next) {
+  if (showOriginal === next) return;
+
+  if (next) {
+    // Save current adjusted state so the user can compare, then show a neutral baseline in Original view.
+    savedAdjusted = {
+      capability,
+      brightnessUi,
+      warmthUi,
+      dimToWarm,
+    };
+
+    showOriginal = true;
+
+    // In Original view, represent "no adjustments" in the control positions.
+    brightnessUi = 100;
+    warmthUi = 0;
+    dimToWarm = false;
+
+    if (brightnessSlider) brightnessSlider.value = String(brightnessUi);
+    if (mcBrightness) mcBrightness.value = String(brightnessUi);
+    if (warmthSlider) warmthSlider.value = String(warmthUi);
+    if (mcWarmth) mcWarmth.value = String(warmthUi);
+    if (dimToWarmToggle) dimToWarmToggle.checked = false;
+    if (mcDimToWarm) mcDimToWarm.checked = false;
+
+    updateCapabilityUI();
+    updateWarmthUI();
+    updateBeforeAfterUI();
+    scheduleRender();
+    return;
+  }
+
+  // Returning to Adjusted view: restore prior adjusted state, if any.
+  showOriginal = false;
+  if (savedAdjusted) {
+    capability = savedAdjusted.capability;
+    brightnessUi = savedAdjusted.brightnessUi;
+    warmthUi = savedAdjusted.warmthUi;
+    dimToWarm = savedAdjusted.dimToWarm;
+    savedAdjusted = null;
+  }
+
+  if (brightnessSlider) brightnessSlider.value = String(brightnessUi);
+  if (mcBrightness) mcBrightness.value = String(brightnessUi);
+  if (warmthSlider) warmthSlider.value = String(warmthUi);
+  if (mcWarmth) mcWarmth.value = String(warmthUi);
+  if (dimToWarmToggle) dimToWarmToggle.checked = dimToWarm;
+  if (mcDimToWarm) mcDimToWarm.checked = dimToWarm;
+
+  updateCapabilityUI();
+  updateWarmthUI();
+  updateBeforeAfterUI();
+  scheduleRender();
+}
+
 function scheduleRender() {
   if (rafPending || !originalImageData) return;
   rafPending = true;
@@ -417,6 +474,7 @@ function applyImageSource(imageSource) {
   warmthUi = DEFAULT_WARMTH;
   dimToWarm = false;
   showOriginal = false;
+  savedAdjusted = null;
 
   daylightMask = computeDaylightMask(originalImageData.data, targetWidth, targetHeight);
   midtoneMask = buildMidtoneMask(originalImageData.data, targetWidth, targetHeight);
@@ -515,47 +573,47 @@ function init() {
 
   if (capabilitySelect) {
     capabilitySelect.addEventListener("change", () => {
+      if (showOriginal) savedAdjusted = null;
       capability = capabilitySelect.value;
       updateCapabilityUI();
       markControlsUsed();
-      showOriginal = false;
-      updateBeforeAfterUI();
+      setViewOriginal(false);
       scheduleRender();
     });
   }
   if (mcCapability) {
     mcCapability.addEventListener("change", () => {
+      if (showOriginal) savedAdjusted = null;
       capability = mcCapability.value;
       updateCapabilityUI();
       markControlsUsed();
-      showOriginal = false;
-      updateBeforeAfterUI();
+      setViewOriginal(false);
       scheduleRender();
     });
   }
 
   const onBrightness = (value, source) => {
+    if (showOriginal) savedAdjusted = null;
     brightnessUi = Number(value);
     // Sync the other slider
     if (source === "desktop" && mcBrightness) mcBrightness.value = value;
     if (source === "mobile" && brightnessSlider) brightnessSlider.value = value;
     markControlsUsed();
-    showOriginal = false;
-    updateBeforeAfterUI();
+    setViewOriginal(false);
     scheduleRender();
   };
   if (brightnessSlider) brightnessSlider.addEventListener("input", () => onBrightness(brightnessSlider.value, "desktop"));
   if (mcBrightness) mcBrightness.addEventListener("input", () => onBrightness(mcBrightness.value, "mobile"));
 
   const onWarmth = (value, source) => {
+    if (showOriginal) savedAdjusted = null;
     warmthUi = Number(value);
     // Sync the other slider
     if (source === "desktop" && mcWarmth) mcWarmth.value = value;
     if (source === "mobile" && warmthSlider) warmthSlider.value = value;
     updateWarmthUI();
     markControlsUsed();
-    showOriginal = false;
-    updateBeforeAfterUI();
+    setViewOriginal(false);
     scheduleRender();
   };
   if (warmthSlider) warmthSlider.addEventListener("input", () => onWarmth(warmthSlider.value, "desktop"));
@@ -563,41 +621,37 @@ function init() {
 
   if (dimToWarmToggle) {
     dimToWarmToggle.addEventListener("change", () => {
+      if (showOriginal) savedAdjusted = null;
       dimToWarm = dimToWarmToggle.checked;
       if (mcDimToWarm) mcDimToWarm.checked = dimToWarm;
       if (dimToWarm) warmthUi = DEFAULT_WARMTH;
       updateWarmthUI();
       markControlsUsed();
-      showOriginal = false;
-      updateBeforeAfterUI();
+      setViewOriginal(false);
       scheduleRender();
     });
   }
   if (mcDimToWarm) {
     mcDimToWarm.addEventListener("change", () => {
+      if (showOriginal) savedAdjusted = null;
       dimToWarm = mcDimToWarm.checked;
       if (dimToWarmToggle) dimToWarmToggle.checked = dimToWarm;
       if (dimToWarm) warmthUi = DEFAULT_WARMTH;
       updateWarmthUI();
       markControlsUsed();
-      showOriginal = false;
-      updateBeforeAfterUI();
+      setViewOriginal(false);
       scheduleRender();
     });
   }
 
   if (viewAdjustedBtn) {
     viewAdjustedBtn.addEventListener("click", () => {
-      showOriginal = false;
-      updateBeforeAfterUI();
-      scheduleRender();
+      setViewOriginal(false);
     });
   }
   if (viewOriginalBtn) {
     viewOriginalBtn.addEventListener("click", () => {
-      showOriginal = true;
-      updateBeforeAfterUI();
-      scheduleRender();
+      setViewOriginal(true);
     });
   }
 

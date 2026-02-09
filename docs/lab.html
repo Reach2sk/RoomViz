@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RoomViz Lab</title>
+    <link rel="stylesheet" href="styles.css?v=20260207-35" />
+    <link rel="stylesheet" href="lab.css?v=20260207-35" />
+  </head>
+  <body>
+    <div class="page lab">
+      <header class="hero">
+        <div class="hero-text">
+          <h1>Light the room. See the mood.</h1>
+          <p class="subhead">Compare what “standard” vs “deep dimming” feels like — without numbers.</p>
+        </div>
+      </header>
+
+      <main class="main lab-main">
+        <section class="stage" id="stage">
+          <div class="canvas-wrap" id="canvasWrap">
+            <canvas id="roomCanvas" width="960" height="640"></canvas>
+
+            <div class="stage-overlay">
+              <div class="segmented" role="tablist" aria-label="View mode">
+                <button id="viewAdjusted" class="segmented-btn is-active" aria-selected="true" disabled>
+                  Adjusted
+                </button>
+                <button id="viewOriginal" class="segmented-btn" aria-selected="false" disabled>
+                  Original
+                </button>
+              </div>
+            </div>
+
+            <!-- Mobile overlay controls -->
+            <div class="mobile-controls is-collapsed" id="mobileControls">
+              <button id="mcToggle" class="mc-toggle" type="button" disabled>
+                <span class="mc-label">Adjust lighting</span>
+                <span class="mc-chevron" aria-hidden="true"></span>
+              </button>
+              <div class="mobile-controls-inner">
+                <div class="mc-row">
+                  <span class="mc-label">Capability</span>
+                  <span class="mc-value" id="mcCapabilityValue">Standard LED</span>
+                </div>
+                <select id="mcCapability" class="lab-select" disabled>
+                  <option value="standard">Standard LED</option>
+                  <option value="deep">Deep Dimming</option>
+                  <option value="ultra">Ultra-Deep + Warm Dim</option>
+                </select>
+
+                <div class="mc-row">
+                  <span class="mc-label">Brightness</span>
+                  <span class="mc-value" id="mcBrightnessState">Comfortable</span>
+                </div>
+                <input
+                  type="range"
+                  id="mcBrightness"
+                  class="mc-slider"
+                  min="0"
+                  max="100"
+                  value="70"
+                  step="1"
+                  disabled
+                />
+                <div class="lab-ticks">
+                  <span>Nightlight</span>
+                  <span>Cozy</span>
+                  <span>Bright</span>
+                </div>
+                <p class="lab-inline is-hidden" id="mcLimitMsg">Some lights can’t dim lower than this.</p>
+
+                <div class="mc-row">
+                  <span class="mc-label">Warmth</span>
+                  <span class="mc-value" id="mcWarmthValue">Neutral</span>
+                </div>
+                <div class="segmented lab-segmented" role="group" aria-label="Warmth">
+                  <button class="segmented-btn" id="mcWarm" type="button" disabled>Warm</button>
+                  <button class="segmented-btn is-active" id="mcNeutral" type="button" disabled>Neutral</button>
+                  <button class="segmented-btn" id="mcCool" type="button" disabled>Cool</button>
+                </div>
+
+                <label class="lab-switch is-hidden" id="mcDimToWarmRow">
+                  <input id="mcDimToWarm" type="checkbox" />
+                  <span>Dim-to-warm</span>
+                </label>
+                <p class="lab-inline is-hidden" id="mcDimToWarmHint">As you dim, the light gets warmer.</p>
+              </div>
+            </div>
+
+            <div class="loading-overlay" id="loadingOverlay" aria-live="polite">
+              <div class="spinner" aria-hidden="true"></div>
+              <span>Processing photo…</span>
+            </div>
+
+            <div class="empty-state" id="emptyState">
+              <div>
+                <h2>Your room appears here</h2>
+                <p>Upload a photo to compare dimming capability and warmth.</p>
+                <div class="empty-actions">
+                  <button id="uploadBtn" class="primary">Choose photo</button>
+                  <span class="hint">or drag and drop a file</span>
+                </div>
+              </div>
+            </div>
+            <input type="file" id="fileInput" accept="image/*" hidden />
+          </div>
+
+          <div class="photo-actions" id="photoActions" style="display:none">
+            <div class="photo-actions-left">
+              <button id="replaceBtn" class="ghost ghost-small" disabled>Change photo</button>
+            </div>
+            <a class="ghost ghost-small" href="./index.html">Back to main</a>
+          </div>
+
+          <p class="disclaimer mobile-only mobile-disclaimer">
+            Visual guide only. Demo, not a spec tool.
+            <span class="build-version build-version-lab"></span>
+          </p>
+        </section>
+
+        <aside class="controls" id="controlsPanel" aria-label="Lighting controls">
+          <div class="card">
+            <button id="sheetToggle" class="sheet-toggle" type="button" disabled>
+              <span class="sheet-handle" aria-hidden="true"></span>
+              <span class="sheet-label">Adjust lighting</span>
+              <span class="sheet-chevron" aria-hidden="true"></span>
+            </button>
+
+            <div class="sheet-body">
+              <div class="card-header">
+                <h2>Lighting controls</h2>
+                <p class="lab-subhead">Compare what a light can (or can’t) do at night.</p>
+              </div>
+
+              <div class="control" id="capabilityControl">
+                <label for="capability">
+                  Capability
+                  <span class="control-value" id="capabilityValue">Standard LED</span>
+                </label>
+                <select id="capability" class="lab-select" disabled>
+                  <option value="standard">Standard LED</option>
+                  <option value="deep">Deep Dimming</option>
+                  <option value="ultra">Ultra-Deep + Warm Dim</option>
+                </select>
+                <p class="control-hint">This changes what “dim” and “warm” can actually reach.</p>
+              </div>
+
+              <div class="control" id="brightnessControl">
+                <label for="brightness">
+                  Brightness
+                  <span class="control-value" id="brightnessState">Comfortable</span>
+                </label>
+                <input type="range" id="brightness" min="0" max="100" value="70" step="1" disabled />
+                <div class="lab-ticks">
+                  <span>Nightlight</span>
+                  <span>Cozy</span>
+                  <span>Bright</span>
+                </div>
+                <p class="lab-inline is-hidden" id="limitMsg">Some lights can’t dim lower than this.</p>
+              </div>
+
+              <div class="control" id="warmthControl">
+                <label>
+                  Warmth
+                  <span class="control-value" id="warmthValue">Neutral</span>
+                </label>
+                <div class="segmented lab-segmented" role="group" aria-label="Warmth">
+                  <button class="segmented-btn" id="warmBtn" type="button" disabled>Warm</button>
+                  <button class="segmented-btn is-active" id="neutralBtn" type="button" disabled>Neutral</button>
+                  <button class="segmented-btn" id="coolBtn" type="button" disabled>Cool</button>
+                </div>
+                <p class="control-hint">Same brightness, different mood.</p>
+              </div>
+
+              <div class="control is-hidden" id="dimToWarmControl">
+                <label class="lab-switch">
+                  <input id="dimToWarm" type="checkbox" />
+                  <span>Dim-to-warm</span>
+                </label>
+                <p class="control-hint">As you dim, the light gets warmer.</p>
+              </div>
+
+              <p class="disclaimer">
+                Visual guide only. Real rooms vary by fixture, finish, and daylight.
+                <span class="build-version build-version-lab"></span>
+              </p>
+            </div>
+          </div>
+        </aside>
+      </main>
+    </div>
+
+    <script src="lab.js?v=20260207-35"></script>
+  </body>
+</html>
+

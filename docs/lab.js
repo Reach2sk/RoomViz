@@ -1,4 +1,4 @@
-const LAB_BUILD = "20260209-37";
+const LAB_BUILD = "20260209-38";
 
 const fileInput = document.getElementById("fileInput");
 const uploadBtn = document.getElementById("uploadBtn");
@@ -126,16 +126,20 @@ function kelvinToRgb(kelvin) {
 
 const NEUTRAL_WB = kelvinToRgb(6500);
 
-function tempMultipliersFromKelvin(kelvin, toneSignHint = 0) {
+function tempMultipliersFromKelvin(kelvin) {
   const wb = kelvinToRgb(clamp(kelvin, 1800, 9000));
   const r = wb.r / NEUTRAL_WB.r;
   const g = wb.g / NEUTRAL_WB.g;
   const b = wb.b / NEUTRAL_WB.b;
   const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
 
-  // Keep "cool" from feeling like dimming; let warm feel slightly dimmer.
-  const coolBoost = 1 + 0.06 * Math.max(toneSignHint, 0);
-  const warmDim = 1 - 0.12 * Math.max(-toneSignHint, 0);
+  // Smooth compensation around neutral (6500K) to avoid a "step" at Neutral.
+  // tone < 0 => warmer, tone > 0 => cooler.
+  const tone = clamp((kelvin - 6500) / 2600, -1, 1);
+
+  // Keep "cool" from feeling like dimming; let warm feel slightly dimmer (perception).
+  const coolBoost = 1 + 0.06 * Math.max(tone, 0);
+  const warmDim = 1 - 0.12 * Math.max(-tone, 0);
   const gain = clamp((1 / Math.max(lum, 1e-6)) * coolBoost * warmDim, 0.78, 1.38);
   return { r, g, b, gain };
 }
@@ -322,8 +326,7 @@ function applyModel(src, out, outputLevel, kelvin, uiBrightness) {
   const contrast = 1.12 + (0.98 - 1.12) * uiBrightness;
   const gamma = 1.25 + (1.0 - 1.25) * uiBrightness;
 
-  const toneSignHint = kelvin > 6510 ? 1 : kelvin < 6490 ? -1 : 0;
-  const tempMul = tempMultipliersFromKelvin(kelvin, toneSignHint);
+  const tempMul = tempMultipliersFromKelvin(kelvin);
 
   for (let i = 0; i < src.length; i += 4) {
     const index = i / 4;
@@ -515,6 +518,8 @@ function init() {
       capability = capabilitySelect.value;
       updateCapabilityUI();
       markControlsUsed();
+      showOriginal = false;
+      updateBeforeAfterUI();
       scheduleRender();
     });
   }
@@ -523,6 +528,8 @@ function init() {
       capability = mcCapability.value;
       updateCapabilityUI();
       markControlsUsed();
+      showOriginal = false;
+      updateBeforeAfterUI();
       scheduleRender();
     });
   }
@@ -533,6 +540,8 @@ function init() {
     if (source === "desktop" && mcBrightness) mcBrightness.value = value;
     if (source === "mobile" && brightnessSlider) brightnessSlider.value = value;
     markControlsUsed();
+    showOriginal = false;
+    updateBeforeAfterUI();
     scheduleRender();
   };
   if (brightnessSlider) brightnessSlider.addEventListener("input", () => onBrightness(brightnessSlider.value, "desktop"));
@@ -545,6 +554,8 @@ function init() {
     if (source === "mobile" && warmthSlider) warmthSlider.value = value;
     updateWarmthUI();
     markControlsUsed();
+    showOriginal = false;
+    updateBeforeAfterUI();
     scheduleRender();
   };
   if (warmthSlider) warmthSlider.addEventListener("input", () => onWarmth(warmthSlider.value, "desktop"));
@@ -557,6 +568,8 @@ function init() {
       if (dimToWarm) warmthUi = DEFAULT_WARMTH;
       updateWarmthUI();
       markControlsUsed();
+      showOriginal = false;
+      updateBeforeAfterUI();
       scheduleRender();
     });
   }
@@ -567,6 +580,8 @@ function init() {
       if (dimToWarm) warmthUi = DEFAULT_WARMTH;
       updateWarmthUI();
       markControlsUsed();
+      showOriginal = false;
+      updateBeforeAfterUI();
       scheduleRender();
     });
   }

@@ -95,12 +95,17 @@ Brightness UI -> output level:
 - Reduce in daylight-like regions (very bright + low saturation) to avoid “warm windows”.
 - Brightness should **not** change warmth when warmth is Neutral and Dim-to-warm is OFF.
 
+### Interaction behavior
+- Changing any control (capability, brightness, warmth, dim-to-warm) should automatically switch the view to `Adjusted`
+  so users never feel like the controls are “not working” while in `Original`.
+
 ### Acceptance checks (for testers)
 - In Standard LED, the user cannot reach `Night-friendly`; message appears when clamped.
 - In Deep Dimming, the user can reach `Night-friendly`.
 - In Ultra-Deep + Warm Dim with Dim-to-warm ON, lowering brightness makes the scene warmer and calmer.
 - Warm/Cool should not invert.
 - With warmth centered at `Neutral` (and Dim-to-warm OFF), moving the brightness slider should not add a noticeable warm/cool tint.
+- If the user is viewing `Original` and touches any control, the view switches to `Adjusted` immediately.
 
 ## Files
 - `docs/lab.html`: beta UI page (does not replace main).

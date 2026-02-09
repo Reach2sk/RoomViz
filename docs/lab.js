@@ -1,4 +1,4 @@
-const LAB_BUILD = "20260207-35";
+const LAB_BUILD = "20260209-37";
 
 const fileInput = document.getElementById("fileInput");
 const uploadBtn = document.getElementById("uploadBtn");
@@ -18,12 +18,9 @@ const capabilitySelect = document.getElementById("capability");
 const capabilityValue = document.getElementById("capabilityValue");
 const brightnessSlider = document.getElementById("brightness");
 const brightnessState = document.getElementById("brightnessState");
+const warmthSlider = document.getElementById("warmth");
 const warmthValue = document.getElementById("warmthValue");
 const limitMsg = document.getElementById("limitMsg");
-
-const warmBtn = document.getElementById("warmBtn");
-const neutralBtn = document.getElementById("neutralBtn");
-const coolBtn = document.getElementById("coolBtn");
 
 const dimToWarmControl = document.getElementById("dimToWarmControl");
 const dimToWarmToggle = document.getElementById("dimToWarm");
@@ -37,9 +34,7 @@ const mcBrightness = document.getElementById("mcBrightness");
 const mcBrightnessState = document.getElementById("mcBrightnessState");
 const mcLimitMsg = document.getElementById("mcLimitMsg");
 const mcWarmthValue = document.getElementById("mcWarmthValue");
-const mcWarm = document.getElementById("mcWarm");
-const mcNeutral = document.getElementById("mcNeutral");
-const mcCool = document.getElementById("mcCool");
+const mcWarmth = document.getElementById("mcWarmth");
 const mcDimToWarmRow = document.getElementById("mcDimToWarmRow");
 const mcDimToWarm = document.getElementById("mcDimToWarm");
 const mcDimToWarmHint = document.getElementById("mcDimToWarmHint");
@@ -50,27 +45,29 @@ const ctx = canvas.getContext("2d", { willReadFrequently: true });
 
 const MAX_WIDTH = 1200;
 const MAX_HEIGHT = 800;
-const DEFAULT_BRIGHTNESS = 70;
+const DEFAULT_BRIGHTNESS = 80;
+const DEFAULT_WARMTH = 0; // slider: -100 warm .. 0 neutral .. +100 cool
 
 const CAPABILITIES = {
   standard: {
     label: "Standard LED",
     minOutput: 0.05,
-    warmth: { warm: 2700, neutral: 3500, cool: 6500 },
+    warmth: { warmMin: 2700, coolMax: 7500 },
     allowDimToWarm: false,
   },
   deep: {
     label: "Deep Dimming",
     minOutput: 0.01,
-    warmth: { warm: 2700, neutral: 3500, cool: 6500 },
+    warmth: { warmMin: 2700, coolMax: 7500 },
     allowDimToWarm: false,
   },
   ultra: {
     label: "Ultra-Deep + Warm Dim",
     minOutput: 0.001,
-    warmth: { warm: 2200, neutral: 3000, cool: 5500 },
+    warmth: { warmMin: 1800, coolMax: 6500 },
     allowDimToWarm: true,
-    dimToWarm: { bright: 3000, dim: 1800 },
+    // When enabled, start at "neutral" (no shift) and warm as you dim.
+    dimToWarm: { bright: 6500, dim: 1800 },
   },
 };
 
@@ -82,10 +79,11 @@ let midtoneMask = null;
 
 let capability = "standard";
 let brightnessUi = DEFAULT_BRIGHTNESS;
-let warmthMode = "neutral"; // warm | neutral | cool | auto
+let warmthUi = DEFAULT_WARMTH;
 let dimToWarm = false;
 
 let hasUsedControls = false;
+let rafPending = false;
 const CONTROLS_USED_KEY = "roomviz_lab_controls_used";
 
 function clamp(value, min = 0, max = 1) {
@@ -226,28 +224,31 @@ function effectiveOutput(uiValue) {
   const cap = CAPABILITIES[capability];
   const t = clamp(uiValue / 100, 0, 1);
   const curved = t * t;
-  const out = cap.minOutput + (1 - cap.minOutput) * curved;
-  return { out, clamped: out <= cap.minOutput + 1e-6 };
+  const raw = cap.minOutput + (1 - cap.minOutput) * curved;
+  // Standard LED: clamp so slider ≤15 all hit the floor (soft-stop zone).
+  const softFloor = capability === "standard" ? 0.07 : cap.minOutput;
+  const out = Math.max(raw, softFloor);
+  const clamped = raw < softFloor + 1e-6;
+  return { out, clamped };
 }
 
-function warmthKelvinForState(state, outputLevel) {
+function warmthKelvinForSlider(warmthValue, outputLevel) {
   const cap = CAPABILITIES[capability];
   if (cap.allowDimToWarm && dimToWarm) {
     const t = clamp((outputLevel - cap.minOutput) / (1 - cap.minOutput), 0, 1);
     const dimAmt = 1 - t;
     return cap.dimToWarm.bright + (cap.dimToWarm.dim - cap.dimToWarm.bright) * dimAmt;
   }
-  if (state === "warm") return cap.warmth.warm;
-  if (state === "cool") return cap.warmth.cool;
-  return cap.warmth.neutral;
+  const u = clamp(warmthValue / 100, -1, 1);
+  if (u < 0) return 6500 + (cap.warmth.warmMin - 6500) * (-u);
+  if (u > 0) return 6500 + (cap.warmth.coolMax - 6500) * u;
+  return 6500;
 }
 
 function setControlsEnabled(enabled) {
   if (capabilitySelect) capabilitySelect.disabled = !enabled;
   if (brightnessSlider) brightnessSlider.disabled = !enabled;
-  if (warmBtn) warmBtn.disabled = !enabled;
-  if (neutralBtn) neutralBtn.disabled = !enabled;
-  if (coolBtn) coolBtn.disabled = !enabled;
+  if (warmthSlider) warmthSlider.disabled = !enabled;
   if (replaceBtn) replaceBtn.disabled = !enabled;
   if (viewAdjustedBtn) viewAdjustedBtn.disabled = !enabled;
   if (viewOriginalBtn) viewOriginalBtn.disabled = !enabled;
@@ -256,37 +257,39 @@ function setControlsEnabled(enabled) {
   if (mcToggle) mcToggle.disabled = !enabled;
   if (mcCapability) mcCapability.disabled = !enabled;
   if (mcBrightness) mcBrightness.disabled = !enabled;
-  if (mcWarm) mcWarm.disabled = !enabled;
-  if (mcNeutral) mcNeutral.disabled = !enabled;
-  if (mcCool) mcCool.disabled = !enabled;
+  if (mcWarmth) mcWarmth.disabled = !enabled;
 
   if (!enabled) {
     setMobileControls(false);
   }
 }
 
-function updateWarmthButtons() {
-  const setActive = (btn, active) => btn && btn.classList.toggle("is-active", active);
-  setActive(warmBtn, warmthMode === "warm");
-  setActive(neutralBtn, warmthMode === "neutral");
-  setActive(coolBtn, warmthMode === "cool");
-  setActive(mcWarm, warmthMode === "warm");
-  setActive(mcNeutral, warmthMode === "neutral");
-  setActive(mcCool, warmthMode === "cool");
+function updateWarmthUI() {
+  const cap = CAPABILITIES[capability];
+  const allowDimToWarm = cap.allowDimToWarm;
+  const isAuto = allowDimToWarm && dimToWarm;
 
-  const label = dimToWarm && CAPABILITIES[capability].allowDimToWarm ? "Auto" : warmthMode[0].toUpperCase() + warmthMode.slice(1);
+  const label = isAuto
+    ? "Auto"
+    : Math.abs(warmthUi) < 8
+      ? "Neutral"
+      : warmthUi < 0
+        ? "Warm"
+        : "Cool";
+
   if (warmthValue) warmthValue.textContent = label;
   if (mcWarmthValue) mcWarmthValue.textContent = label;
 
-  const allowDimToWarm = CAPABILITIES[capability].allowDimToWarm;
   if (dimToWarmControl) dimToWarmControl.classList.toggle("is-hidden", !allowDimToWarm);
   if (mcDimToWarmRow) mcDimToWarmRow.classList.toggle("is-hidden", !allowDimToWarm);
   if (mcDimToWarmHint) mcDimToWarmHint.classList.toggle("is-hidden", !(allowDimToWarm && dimToWarm));
 
-  const disableWarmth = allowDimToWarm && dimToWarm;
-  [warmBtn, neutralBtn, coolBtn, mcWarm, mcNeutral, mcCool].forEach((b) => {
-    if (b) b.disabled = disableWarmth || !originalImageData;
-  });
+  const disableWarmth = isAuto;
+  if (warmthSlider) warmthSlider.disabled = disableWarmth || !originalImageData;
+  if (mcWarmth) mcWarmth.disabled = disableWarmth || !originalImageData;
+
+  if (warmthSlider && Number(warmthSlider.value) !== warmthUi) warmthSlider.value = String(warmthUi);
+  if (mcWarmth && Number(mcWarmth.value) !== warmthUi) mcWarmth.value = String(warmthUi);
 }
 
 function updateCapabilityUI() {
@@ -300,7 +303,7 @@ function updateCapabilityUI() {
   if (dimToWarmToggle) dimToWarmToggle.checked = dimToWarm;
   if (mcDimToWarm) mcDimToWarm.checked = dimToWarm;
 
-  updateWarmthButtons();
+  updateWarmthUI();
 }
 
 function updateBrightnessUI(outputLevel, clamped) {
@@ -313,13 +316,13 @@ function updateBrightnessUI(outputLevel, clamped) {
   if (mcLimitMsg) mcLimitMsg.classList.toggle("is-hidden", !showLimit);
 }
 
-function applyModel(src, out, outputLevel, kelvin) {
+function applyModel(src, out, outputLevel, kelvin, uiBrightness) {
   // Model: temperature-based shift, midtone-focused, daylight-protected.
-  const exposure = 0.35 + (1.12 - 0.35) * outputLevel;
-  const contrast = 1.12 + (0.98 - 1.12) * outputLevel;
-  const gamma = 1.25 + (1.0 - 1.25) * outputLevel;
+  const exposure = 0.94 + (1.06 - 0.94) * uiBrightness;
+  const contrast = 1.12 + (0.98 - 1.12) * uiBrightness;
+  const gamma = 1.25 + (1.0 - 1.25) * uiBrightness;
 
-  const toneSignHint = kelvin >= 6500 ? 1 : kelvin <= 3500 ? -1 : 0;
+  const toneSignHint = kelvin > 6510 ? 1 : kelvin < 6490 ? -1 : 0;
   const tempMul = tempMultipliersFromKelvin(kelvin, toneSignHint);
 
   for (let i = 0; i < src.length; i += 4) {
@@ -339,14 +342,11 @@ function applyModel(src, out, outputLevel, kelvin) {
     let g = og * (1 + (tempMul.g - 1) * toneStrength) * scale;
     let b = ob * (1 + (tempMul.b - 1) * toneStrength) * scale;
 
-    // Dimming capability: physical output gain.
-    r *= outputLevel;
-    g *= outputLevel;
-    b *= outputLevel;
-
-    r *= exposure;
-    g *= exposure;
-    b *= exposure;
+    // Dimming capability: output gain.
+    const gain = outputLevel * exposure;
+    r *= gain;
+    g *= gain;
+    b *= gain;
 
     r = (r - 0.5) * contrast + 0.5;
     g = (g - 0.5) * contrast + 0.5;
@@ -376,16 +376,22 @@ function render() {
   }
 
   const { out: outputLevel, clamped } = effectiveOutput(brightnessUi);
-  const kelvin = warmthKelvinForState(warmthMode, outputLevel);
+  const kelvin = warmthKelvinForSlider(warmthUi, outputLevel);
+  const uiBrightness = clamp(brightnessUi / 100, 0, 1);
 
   updateBrightnessUI(outputLevel, clamped);
 
-  applyModel(originalImageData.data, outputImageData.data, outputLevel, kelvin);
+  applyModel(originalImageData.data, outputImageData.data, outputLevel, kelvin, uiBrightness);
   ctx.putImageData(outputImageData, 0, 0);
 }
 
 function scheduleRender() {
-  requestAnimationFrame(render);
+  if (rafPending || !originalImageData) return;
+  rafPending = true;
+  requestAnimationFrame(() => {
+    rafPending = false;
+    render();
+  });
 }
 
 function applyImageSource(imageSource) {
@@ -405,7 +411,7 @@ function applyImageSource(imageSource) {
   document.body.classList.add("has-photo");
   setControlsEnabled(true);
   brightnessUi = DEFAULT_BRIGHTNESS;
-  warmthMode = "neutral";
+  warmthUi = DEFAULT_WARMTH;
   dimToWarm = false;
   showOriginal = false;
 
@@ -414,6 +420,8 @@ function applyImageSource(imageSource) {
 
   if (brightnessSlider) brightnessSlider.value = String(brightnessUi);
   if (mcBrightness) mcBrightness.value = String(brightnessUi);
+  if (warmthSlider) warmthSlider.value = String(warmthUi);
+  if (mcWarmth) mcWarmth.value = String(warmthUi);
   updateCapabilityUI();
   updateBeforeAfterUI();
   setLoading(false);
@@ -483,12 +491,6 @@ async function loadSampleImage() {
   }
 }
 
-function setWarmth(mode) {
-  warmthMode = mode;
-  updateWarmthButtons();
-  scheduleRender();
-}
-
 function init() {
   hasUsedControls = localStorage.getItem(CONTROLS_USED_KEY) === "1";
   document.querySelectorAll(".build-version-lab").forEach((el) => {
@@ -525,26 +527,35 @@ function init() {
     });
   }
 
-  const onBrightness = (value) => {
+  const onBrightness = (value, source) => {
     brightnessUi = Number(value);
+    // Sync the other slider
+    if (source === "desktop" && mcBrightness) mcBrightness.value = value;
+    if (source === "mobile" && brightnessSlider) brightnessSlider.value = value;
     markControlsUsed();
     scheduleRender();
   };
-  if (brightnessSlider) brightnessSlider.addEventListener("input", () => onBrightness(brightnessSlider.value));
-  if (mcBrightness) mcBrightness.addEventListener("input", () => onBrightness(mcBrightness.value));
+  if (brightnessSlider) brightnessSlider.addEventListener("input", () => onBrightness(brightnessSlider.value, "desktop"));
+  if (mcBrightness) mcBrightness.addEventListener("input", () => onBrightness(mcBrightness.value, "mobile"));
 
-  if (warmBtn) warmBtn.addEventListener("click", () => setWarmth("warm"));
-  if (neutralBtn) neutralBtn.addEventListener("click", () => setWarmth("neutral"));
-  if (coolBtn) coolBtn.addEventListener("click", () => setWarmth("cool"));
-  if (mcWarm) mcWarm.addEventListener("click", () => setWarmth("warm"));
-  if (mcNeutral) mcNeutral.addEventListener("click", () => setWarmth("neutral"));
-  if (mcCool) mcCool.addEventListener("click", () => setWarmth("cool"));
+  const onWarmth = (value, source) => {
+    warmthUi = Number(value);
+    // Sync the other slider
+    if (source === "desktop" && mcWarmth) mcWarmth.value = value;
+    if (source === "mobile" && warmthSlider) warmthSlider.value = value;
+    updateWarmthUI();
+    markControlsUsed();
+    scheduleRender();
+  };
+  if (warmthSlider) warmthSlider.addEventListener("input", () => onWarmth(warmthSlider.value, "desktop"));
+  if (mcWarmth) mcWarmth.addEventListener("input", () => onWarmth(mcWarmth.value, "mobile"));
 
   if (dimToWarmToggle) {
     dimToWarmToggle.addEventListener("change", () => {
       dimToWarm = dimToWarmToggle.checked;
       if (mcDimToWarm) mcDimToWarm.checked = dimToWarm;
-      updateWarmthButtons();
+      if (dimToWarm) warmthUi = DEFAULT_WARMTH;
+      updateWarmthUI();
       markControlsUsed();
       scheduleRender();
     });
@@ -553,7 +564,8 @@ function init() {
     mcDimToWarm.addEventListener("change", () => {
       dimToWarm = mcDimToWarm.checked;
       if (dimToWarmToggle) dimToWarmToggle.checked = dimToWarm;
-      updateWarmthButtons();
+      if (dimToWarm) warmthUi = DEFAULT_WARMTH;
+      updateWarmthUI();
       markControlsUsed();
       scheduleRender();
     });
@@ -609,4 +621,3 @@ function init() {
 }
 
 init();
-

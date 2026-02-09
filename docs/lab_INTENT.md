@@ -56,9 +56,15 @@ Behavior:
 Also show a small status label (no numbers):
 - `Harsh` / `Comfortable` / `Night-friendly`
 
-### 3) Warmth control
-Default: 3-state segmented toggle:
-- `Warm` / `Neutral` / `Cool`
+### 3) Warmth control (continuous slider)
+One horizontal slider:
+- Left = `Warm`
+- Middle = `Neutral`
+- Right = `Cool`
+
+Important behavior:
+- Slider center (`Neutral`) must mean **no color shift** relative to the original photo.
+- Warm/Cool shifts should be more noticeable on midtones (walls/fabrics) than in highlights or deep shadows.
 
 ### 4) Dim-to-warm (only where applicable)
 Toggle appears only for `Ultra-Deep + Warm Dim`:
@@ -68,7 +74,8 @@ Toggle appears only for `Ultra-Deep + Warm Dim`:
 
 When ON:
 - warmth is computed from brightness (warmer at lower brightness)
-- warmth toggle is disabled (shows `Auto`).
+- the warmth slider is disabled and the label shows `Auto`
+- at full brightness there should be little-to-no warmth shift; as you dim, it warms toward candlelight.
 
 ## Rendering Behavior (Implementation-Level)
 
@@ -83,18 +90,19 @@ Brightness UI -> output level:
 - Apply output as an overall dim gain.
 
 ### Warmth/tone
-- Apply temperature-based channel multipliers (Kelvin-derived), with luminance compensation.
-- Apply more strongly in midtones than highlights/shadows.
+- Apply a temperature-like shift with luminance compensation.
+- Weight the effect more strongly in midtones than highlights/shadows.
 - Reduce in daylight-like regions (very bright + low saturation) to avoid “warm windows”.
+- Brightness should **not** change warmth when warmth is Neutral and Dim-to-warm is OFF.
 
 ### Acceptance checks (for testers)
 - In Standard LED, the user cannot reach `Night-friendly`; message appears when clamped.
 - In Deep Dimming, the user can reach `Night-friendly`.
 - In Ultra-Deep + Warm Dim with Dim-to-warm ON, lowering brightness makes the scene warmer and calmer.
 - Warm/Cool should not invert.
+- With warmth centered at `Neutral` (and Dim-to-warm OFF), moving the brightness slider should not add a noticeable warm/cool tint.
 
 ## Files
 - `docs/lab.html`: beta UI page (does not replace main).
 - `docs/lab.css`: styling for beta page.
 - `docs/lab.js`: independent JS (must not change behavior of `docs/app.js`).
-

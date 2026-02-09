@@ -4,8 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>RoomViz Lab</title>
-    <link rel="stylesheet" href="styles.css?v=20260207-35" />
-    <link rel="stylesheet" href="lab.css?v=20260207-35" />
+    <link rel="stylesheet" href="styles.css?v=20260209-37" />
+    <link rel="stylesheet" href="lab.css?v=20260209-37" />
   </head>
   <body>
     <div class="page lab">
@@ -51,7 +51,7 @@
 
                 <div class="mc-row">
                   <span class="mc-label">Brightness</span>
-                  <span class="mc-value" id="mcBrightnessState">Comfortable</span>
+                  <span class="mc-value" id="mcBrightnessState">Harsh</span>
                 </div>
                 <input
                   type="range"
@@ -59,7 +59,7 @@
                   class="mc-slider"
                   min="0"
                   max="100"
-                  value="70"
+                  value="80"
                   step="1"
                   disabled
                 />
@@ -74,10 +74,20 @@
                   <span class="mc-label">Warmth</span>
                   <span class="mc-value" id="mcWarmthValue">Neutral</span>
                 </div>
-                <div class="segmented lab-segmented" role="group" aria-label="Warmth">
-                  <button class="segmented-btn" id="mcWarm" type="button" disabled>Warm</button>
-                  <button class="segmented-btn is-active" id="mcNeutral" type="button" disabled>Neutral</button>
-                  <button class="segmented-btn" id="mcCool" type="button" disabled>Cool</button>
+                <input
+                  type="range"
+                  id="mcWarmth"
+                  class="mc-slider mc-slider-warmth"
+                  min="-100"
+                  max="100"
+                  value="0"
+                  step="1"
+                  disabled
+                />
+                <div class="lab-ticks lab-ticks-warmth">
+                  <span>Warm</span>
+                  <span>Neutral</span>
+                  <span>Cool</span>
                 </div>
 
                 <label class="lab-switch is-hidden" id="mcDimToWarmRow">
@@ -149,9 +159,9 @@
               <div class="control" id="brightnessControl">
                 <label for="brightness">
                   Brightness
-                  <span class="control-value" id="brightnessState">Comfortable</span>
+                  <span class="control-value" id="brightnessState">Harsh</span>
                 </label>
-                <input type="range" id="brightness" min="0" max="100" value="70" step="1" disabled />
+                <input type="range" id="brightness" min="0" max="100" value="80" step="1" disabled />
                 <div class="lab-ticks">
                   <span>Nightlight</span>
                   <span>Cozy</span>
@@ -161,14 +171,15 @@
               </div>
 
               <div class="control" id="warmthControl">
-                <label>
+                <label for="warmth">
                   Warmth
                   <span class="control-value" id="warmthValue">Neutral</span>
                 </label>
-                <div class="segmented lab-segmented" role="group" aria-label="Warmth">
-                  <button class="segmented-btn" id="warmBtn" type="button" disabled>Warm</button>
-                  <button class="segmented-btn is-active" id="neutralBtn" type="button" disabled>Neutral</button>
-                  <button class="segmented-btn" id="coolBtn" type="button" disabled>Cool</button>
+                <input type="range" id="warmth" min="-100" max="100" value="0" step="1" disabled />
+                <div class="lab-ticks lab-ticks-warmth">
+                  <span>Warm</span>
+                  <span>Neutral</span>
+                  <span>Cool</span>
                 </div>
                 <p class="control-hint">Same brightness, different mood.</p>
               </div>
@@ -191,7 +202,6 @@
       </main>
     </div>
 
-    <script src="lab.js?v=20260207-35"></script>
+    <script src="lab.js?v=20260209-37"></script>
   </body>
 </html>
-

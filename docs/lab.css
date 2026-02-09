@@ -31,14 +31,22 @@
   margin-top: 6px;
 }
 
+.lab-ticks-warmth {
+  margin-top: 4px;
+}
+
+.mc-slider-warmth {
+  margin-top: 4px;
+}
+
 .lab-inline {
   margin: 8px 0 0;
   font-size: 12px;
   color: var(--lab-muted);
 }
 
-.lab-inline.is-hidden {
-  display: none;
+.is-hidden {
+  display: none !important;
 }
 
 .lab-segmented {
@@ -79,4 +87,3 @@
     margin-top: 2px;
   }
 }
-

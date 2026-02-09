@@ -94,6 +94,7 @@ Brightness UI -> output level:
 - Weight the effect more strongly in midtones than highlights/shadows.
 - Reduce in daylight-like regions (very bright + low saturation) to avoid “warm windows”.
 - Brightness should **not** change warmth when warmth is Neutral and Dim-to-warm is OFF.
+- In Dim-to-warm, allow interior highlights (fixtures/lamps) to shift warmer; keep strong highlight protection only for daylight regions.
 
 ### Interaction behavior
 - Changing any control (capability, brightness, warmth, dim-to-warm) should automatically switch the view to `Adjusted`

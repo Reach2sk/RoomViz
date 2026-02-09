@@ -1,4 +1,4 @@
-const LAB_BUILD = "20260209-39";
+const LAB_BUILD = "20260209-40";
 
 const fileInput = document.getElementById("fileInput");
 const uploadBtn = document.getElementById("uploadBtn");
@@ -67,7 +67,8 @@ const CAPABILITIES = {
     warmth: { warmMin: 1800, coolMax: 6500 },
     allowDimToWarm: true,
     // When enabled, start at "neutral" (no shift) and warm as you dim.
-    dimToWarm: { bright: 6500, dim: 1800 },
+    // Typical "warm dim": ~3000K at full output down to ~1800K at very low output.
+    dimToWarm: { bright: 3000, dim: 1800 },
   },
 };
 
@@ -321,7 +322,7 @@ function updateBrightnessUI(outputLevel, clamped) {
   if (mcLimitMsg) mcLimitMsg.classList.toggle("is-hidden", !showLimit);
 }
 
-function applyModel(src, out, outputLevel, kelvin, uiBrightness) {
+function applyModel(src, out, outputLevel, kelvin, uiBrightness, dimToWarmActive, dimAmt) {
   // Model: temperature-based shift, midtone-focused, daylight-protected.
   const exposure = 0.94 + (1.06 - 0.94) * uiBrightness;
   const contrast = 1.12 + (0.98 - 1.12) * uiBrightness;
@@ -339,7 +340,12 @@ function applyModel(src, out, outputLevel, kelvin, uiBrightness) {
     const mid = midtoneMask ? midtoneMask[index] : midtoneWeight(luma);
     const daylight = daylightMask ? daylightMask[index] : 0;
 
-    const toneStrength = clamp(0.4 + 0.9 * mid, 0, 1.2) * (1 - daylight * 0.75);
+    let toneStrength = clamp(0.4 + 0.9 * mid, 0, 1.2) * (1 - daylight * 0.75);
+    if (dimToWarmActive) {
+      // Make dim-to-warm unmistakable as you approach very low levels,
+      // while still avoiding warm windows via the daylight mask above.
+      toneStrength = clamp(toneStrength * (1 + 1.2 * dimAmt), 0, 1.75);
+    }
     const scale = 1 + (tempMul.gain - 1) * toneStrength;
 
     let r = or * (1 + (tempMul.r - 1) * toneStrength) * scale;
@@ -360,7 +366,11 @@ function applyModel(src, out, outputLevel, kelvin, uiBrightness) {
     g = Math.pow(Math.max(g, 0), gamma);
     b = Math.pow(Math.max(b, 0), gamma);
 
-    const protect = smoothstep(0.75, 0.95, luma);
+    const baseProtect = smoothstep(0.75, 0.95, luma);
+    // In dim-to-warm, allow interior highlights (lamps/fixtures) to change color.
+    // Keep strong protection only in daylight-like regions.
+    const protectStrength = dimToWarmActive ? (0.25 + 0.75 * daylight) : 1;
+    const protect = baseProtect * protectStrength;
     r = r * (1 - protect) + or * protect;
     g = g * (1 - protect) + og * protect;
     b = b * (1 - protect) + ob * protect;
@@ -380,12 +390,17 @@ function render() {
   }
 
   const { out: outputLevel, clamped } = effectiveOutput(brightnessUi);
+  const cap = CAPABILITIES[capability];
+  const dimToWarmActive = cap.allowDimToWarm && dimToWarm;
   const kelvin = warmthKelvinForSlider(warmthUi, outputLevel);
   const uiBrightness = clamp(brightnessUi / 100, 0, 1);
+  const dimAmt = dimToWarmActive
+    ? 1 - clamp((outputLevel - cap.minOutput) / (1 - cap.minOutput), 0, 1)
+    : 0;
 
   updateBrightnessUI(outputLevel, clamped);
 
-  applyModel(originalImageData.data, outputImageData.data, outputLevel, kelvin, uiBrightness);
+  applyModel(originalImageData.data, outputImageData.data, outputLevel, kelvin, uiBrightness, dimToWarmActive, dimAmt);
   ctx.putImageData(outputImageData, 0, 0);
 }
 

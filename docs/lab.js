@@ -1,4 +1,4 @@
-const LAB_BUILD = "20260209-40";
+const LAB_BUILD = "20260209-41";
 
 const fileInput = document.getElementById("fileInput");
 const uploadBtn = document.getElementById("uploadBtn");
@@ -66,9 +66,9 @@ const CAPABILITIES = {
     minOutput: 0.001,
     warmth: { warmMin: 1800, coolMax: 6500 },
     allowDimToWarm: true,
-    // When enabled, start at "neutral" (no shift) and warm as you dim.
-    // Typical "warm dim": ~3000K at full output down to ~1800K at very low output.
-    dimToWarm: { bright: 3000, dim: 1800 },
+    // When enabled, start near neutral/cool at full output, then warm as you dim toward candlelight.
+    // (This is a visualization choice to make the contrast obvious at "Bright".)
+    dimToWarm: { bright: 5200, dim: 1800 },
   },
 };
 
@@ -243,7 +243,9 @@ function warmthKelvinForSlider(warmthValue, outputLevel) {
   if (cap.allowDimToWarm && dimToWarm) {
     const t = clamp((outputLevel - cap.minOutput) / (1 - cap.minOutput), 0, 1);
     const dimAmt = 1 - t;
-    return cap.dimToWarm.bright + (cap.dimToWarm.dim - cap.dimToWarm.bright) * dimAmt;
+    // Delay the onset a bit and ramp more strongly near the low end.
+    const shaped = Math.pow(smoothstep(0.08, 1.0, dimAmt), 1.15);
+    return cap.dimToWarm.bright + (cap.dimToWarm.dim - cap.dimToWarm.bright) * shaped;
   }
   const u = clamp(warmthValue / 100, -1, 1);
   if (u < 0) return 6500 + (cap.warmth.warmMin - 6500) * (-u);

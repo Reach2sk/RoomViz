@@ -75,7 +75,7 @@ Toggle appears only for `Ultra-Deep + Warm Dim`:
 When ON:
 - warmth is computed from brightness (warmer at lower brightness)
 - the warmth slider is disabled and the label shows `Auto`
-- at full brightness there should be little-to-no warmth shift; as you dim, it warms toward candlelight.
+- at full brightness it should read neutral-to-cool (not warm); as you dim, it warms toward candlelight.
 
 ## Rendering Behavior (Implementation-Level)
 
